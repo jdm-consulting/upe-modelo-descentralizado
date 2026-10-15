@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo Central de Control y Producción - UPE</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK (v8) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Cabecera Institucional -->
+    <header class="bg-[#0f4c6e] text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/10 p-2.5 rounded-xl backdrop-blur-sm border border-white/10">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white">Módulo Central de Control y Producción</h1>
+                    <p class="text-xs text-slate-200">Consolidado Multidisciplinario de Atención</p>
+                </div>
+            </div>
+            <div class="mt-4 md:mt-0 flex items-center space-x-3">
+                <span id="estado-conexion" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-200 border border-amber-400/30">
+                    <span class="w-2 h-2 mr-1.5 bg-amber-400 rounded-full animate-pulse"></span> Conectando...
+                </span>
+                <button onclick="window.cargarDatosCentrales()" class="bg-white/10 hover:bg-white/20 text-white text-xs font-medium px-3.5 py-1.5 rounded-lg border border-white/20 transition flex items-center space-x-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>Actualizar</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navegación de Pestañas -->
+    <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-6 flex space-x-8">
+            <button onclick="window.cambiarPestaña('trazabilidad')" id="btn-tab-trazabilidad" class="py-4 px-1 border-b-2 font-semibold text-sm border-sky-600 text-sky-600 flex items-center space-x-2 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <span>TRAZABILIDAD 360° (VISTA DE TARJETAS)</span>
+            </button>
+            <button onclick="window.cambiarPestaña('dashboard')" id="btn-tab-dashboard" class="py-4 px-1 border-b-2 font-semibold text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center space-x-2 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                <span>DASHBOARD DE PRODUCCIÓN Y RENDIMIENTO</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-grow w-full space-y-6">
+
+        <!-- Pestaña 1: Trazabilidad 360° -->
+        <section id="vista-trazabilidad" class="space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <label class="block text-xs font-bold uppercase tracking-wider text-emerald-800 mb-1">Consulta de Trazabilidad Transversal</label>
+                <p class="text-xs text-slate-500 mb-4">Ingrese Apellidos, N° DNI, N° de Expediente o Hoja de Trámite del administrado para revisar su estado en las tres especialidades.</p>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="relative flex-grow">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </span>
+                        <input type="text" id="input-criterio" placeholder="MORON, ROJAS, 654321..." class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-600 focus:bg-white focus:outline-none transition uppercase" onkeypress="if(event.key==='Enter') window.realizarBusquedaTrazabilidad()">
+                    </div>
+                    <button onclick="window.realizarBusquedaTrazabilidad()" class="bg-[#00794c] hover:bg-[#00603c] text-white px-6 py-3 rounded-xl font-semibold text-sm shadow transition flex items-center justify-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <span>CONSULTAR EXPEDIENTE</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tarjeta de Resultados 360 -->
+            <div class="bg-slate-900 rounded-2xl text-white shadow-xl overflow-hidden border border-slate-800">
+                <div class="bg-slate-800/60 px-6 py-4 border-b border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                    <div>
+                        <span class="text-[10px] font-bold tracking-widest text-emerald-400 uppercase">Expediente Multidisciplinario</span>
+                        <h2 id="card-administrado" class="text-lg font-bold text-white tracking-wide">-- REALICE UNA BÚSQUEDA --</h2>
+                    </div>
+                    <div class="text-xs text-slate-300 flex flex-wrap gap-x-4 gap-y-1">
+                        <span>DNI: <strong id="card-dni" class="font-mono text-emerald-300">---</strong></span>
+                        <span>N° Expediente: <strong id="card-exp" class="font-mono text-emerald-300">---</strong></span>
+                        <span>Hoja Trámite: <strong id="card-ht" class="font-mono text-emerald-300">---</strong></span>
+                    </div>
+                </div>
+
+                <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Módulo Legal -->
+                    <div class="bg-white text-slate-800 rounded-2xl p-5 border-2 border-indigo-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-bold uppercase tracking-wider text-indigo-900 flex items-center space-x-1.5">
+                                    <span>⚖️ MÓDULO LEGAL</span>
+                                </span>
+                                <span id="badge-legal" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">SIN REGISTRO</span>
+                            </div>
+                            <p class="text-xs text-slate-600 mb-1">Responsable: <strong id="resp-legal" class="text-slate-900 font-semibold">---</strong></p>
+                            <p class="text-xs text-slate-600 mb-1">Detalle: <span id="det-legal" class="text-slate-900 font-medium">-</span></p>
+                            <p class="text-xs text-slate-600 mb-4">Fecha Registro: <span id="fec-legal" class="text-slate-900 font-medium">-</span></p>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-600" id="obs-legal">
+                            PROVEÍDO / AVANCE: Sin observaciones registradas.
+                        </div>
+                    </div>
+
+                    <!-- Módulo Psicología -->
+                    <div class="bg-white text-slate-800 rounded-2xl p-5 border-2 border-teal-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-bold uppercase tracking-wider text-teal-900 flex items-center space-x-1.5">
+                                    <span>🧠 MÓDULO PSICOLOGÍA</span>
+                                </span>
+                                <span id="badge-psico" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-teal-50 text-teal-700 border border-teal-200">SIN REGISTRO</span>
+                            </div>
+                            <p class="text-xs text-slate-600 mb-1">Responsable: <strong id="resp-psico" class="text-slate-900 font-semibold">---</strong></p>
+                            <p class="text-xs text-slate-600 mb-1">Detalle: <span id="det-psico" class="text-slate-900 font-medium">-</span></p>
+                            <p class="text-xs text-slate-600 mb-4">Fecha Registro: <span id="fec-psico" class="text-slate-900 font-medium">-</span></p>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-600" id="obs-psico">
+                            PROVEÍDO / AVANCE: Sin observaciones registradas.
+                        </div>
+                    </div>
+
+                    <!-- Módulo Trabajo Social -->
+                    <div class="bg-white text-slate-800 rounded-2xl p-5 border-2 border-emerald-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center space-x-1.5">
+                                    <span>🏠 TRABAJO SOCIAL</span>
+                                </span>
+                                <span id="badge-social" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">SIN REGISTRO</span>
+                            </div>
+                            <p class="text-xs text-slate-600 mb-1">Responsable: <strong id="resp-social" class="text-slate-900 font-semibold">---</strong></p>
+                            <p class="text-xs text-slate-600 mb-1">Detalle: <span id="det-social" class="text-slate-900 font-medium">-</span></p>
+                            <p class="text-xs text-slate-600 mb-4">Fecha Registro: <span id="fec-social" class="text-slate-900 font-medium">-</span></p>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-600" id="obs-social">
+                            PROVEÍDO / AVANCE: Sin observaciones registradas.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pestaña 2: Dashboard de Producción y Rendimiento -->
+        <section id="vista-dashboard" class="hidden space-y-6">
+
+            <!-- Panel de Filtros Superior -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">FECHA DESDE:</label>
+                        <input type="date" id="filtro-fecha-desde" onchange="window.actualizarDashboardGraficos()" class="w-full bg-slate-50 border border-slate-300 text-slate-700 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">FECHA HASTA:</label>
+                        <input type="date" id="filtro-fecha-hasta" onchange="window.actualizarDashboardGraficos()" class="w-full bg-slate-50 border border-slate-300 text-slate-700 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">ESPECIALIDAD:</label>
+                        <select id="filtro-especialidad" onchange="window.actualizarDashboardGraficos()" class="w-full bg-slate-50 border border-slate-300 text-slate-700 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-sky-500 focus:outline-none font-medium">
+                            <option value="TODAS">-- TODAS LAS ÁREAS --</option>
+                            <option value="LEGAL">Módulo Legal</option>
+                            <option value="PSICOLOGIA">Psicología</option>
+                            <option value="SOCIAL">Trabajo Social</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">EQUIPO / TURNO:</label>
+                        <select id="filtro-equipo" onchange="window.actualizarDashboardGraficos()" class="w-full bg-slate-50 border border-slate-300 text-slate-700 text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-sky-500 focus:outline-none font-medium">
+                            <option value="TODOS">-- TODOS LOS EQUIPOS --</option>
+                            <option value="EQUIPO 1">Eq. 1</option>
+                            <option value="EQUIPO 2">Eq. 2</option>
+                            <option value="EQUIPO 3">Eq. 3</option>
+                            <option value="EQUIPO 4">Eq. 4</option>
+                            <option value="EQUIPO 5">Eq. 5</option>
+                            <option value="EQUIPO 6">Eq. 6</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button onclick="window.actualizarDashboardGraficos()" class="w-full bg-[#111827] hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider py-3 px-4 rounded-xl shadow transition flex items-center justify-center space-x-2">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd"></path></svg>
+                            <span>ACTUALIZAR MÉTRICAS</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4 Tarjetas KPI -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">CARGA TOTAL (EXP. ÚNICOS)</p>
+                        <h3 id="kpi-carga-total" class="text-3xl font-extrabold text-slate-800">0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h6a2 2 0 012 2v2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">ATENDIDOS / CONCLUIDOS</p>
+                        <h3 id="kpi-concluidos" class="text-3xl font-extrabold text-emerald-600">0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">PENDIENTES / EN PROCESO</p>
+                        <h3 id="kpi-pendientes" class="text-3xl font-extrabold text-amber-500">0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">EFICIENCIA GLOBAL (EQUIDAD)</p>
+                        <h3 id="kpi-eficiencia" class="text-3xl font-extrabold text-indigo-600">0.0%</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficos -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800">PRODUCCIÓN OPERATIVA POR MÓDULO (VOLUMEN BRUTO)</h3>
+                    </div>
+                    <div class="relative h-72 w-full">
+                        <canvas id="chartEspecialidad"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800">CARGA Y RESOLUCIÓN POR EQUIPOS</h3>
+                    </div>
+                    <div class="relative h-72 w-full">
+                        <canvas id="chartEquipos"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+        UPE - Módulo Central de Articulación Multidisciplinaria &copy; 2026
+    </footer>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCo2zMaz-_pTzW0qBdo27_d6AW0_2nhQNw",
+            authDomain: "upe-control-multidisciplinario.firebaseapp.com",
+            databaseURL: "https://upe-control-multidisciplinario-default-rtdb.firebaseio.com",
+            projectId: "upe-control-multidisciplinario",
+            storageBucket: "upe-control-multidisciplinario.appspot.com",
+            messagingSenderId: "835252960269",
+            appId: "1:835252960269:web:c33e88ebe31aa1d64ba944"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        let BD_GLOBAL_TRAZABILIDAD = [];
+        let chartEspecialidadInstance = null;
+        let chartEquiposInstance = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            window.cargarDatosCentrales();
+        });
+
+        function formatearFecha(fechaStr) {
+            if (!fechaStr || fechaStr === "-" || fechaStr === "---") return "-";
+            if (typeof fechaStr === 'string' && fechaStr.includes('-')) {
+                const partes = fechaStr.split('T')[0].split('-');
+                if (partes.length === 3 && partes[0].length === 4) {
+                    const [anio, mes, dia] = partes;
+                    return `${dia}/${mes}/${anio}`;
+                }
+            }
+            return fechaStr;
+        }
+
+        function parseFechaLocal(str) {
+            if (!str || str === "-" || str === "---") return null;
+            if (typeof str === 'string') {
+                if (str.includes('/')) {
+                    const p = str.split('/');
+                    if (p.length === 3) return new Date(p[2], p[1] - 1, p[0]);
+                }
+                if (str.includes('-')) {
+                    const p = str.split('T')[0].split('-');
+                    if (p.length === 3) return new Date(p[0], p[1] - 1, p[2]);
+                }
+            }
+            return null;
+        }
+
+        window.cambiarPestaña = function(pestana) {
+            const btnTra = document.getElementById('btn-tab-trazabilidad');
+            const btnDas = document.getElementById('btn-tab-dashboard');
+            const secTra = document.getElementById('vista-trazabilidad');
+            const secDas = document.getElementById('vista-dashboard');
+
+            if (pestana === 'trazabilidad') {
+                btnTra.className = "py-4 px-1 border-b-2 font-semibold text-sm border-sky-600 text-sky-600 flex items-center space-x-2 transition";
+                btnDas.className = "py-4 px-1 border-b-2 font-semibold text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center space-x-2 transition";
+                secTra.classList.remove('hidden');
+                secDas.classList.add('hidden');
+            } else {
+                btnDas.className = "py-4 px-1 border-b-2 font-semibold text-sm border-sky-600 text-sky-600 flex items-center space-x-2 transition";
+                btnTra.className = "py-4 px-1 border-b-2 font-semibold text-sm border-transparent text-slate-500 hover:text-slate-700 flex items-center space-x-2 transition";
+                secDas.classList.remove('hidden');
+                secTra.classList.add('hidden');
+                window.actualizarDashboardGraficos();
+            }
+        }
+
+        function obtenerValorCamp(obj, ...claves) {
+            if (!obj) return "";
+            for (let c of claves) {
+                if (obj[c] !== undefined && obj[c] !== null && obj[c] !== "") return obj[c];
+            }
+            const llaves = Object.keys(obj);
+            for (let c of claves) {
+                const encontrada = llaves.find(k => k.toLowerCase() === c.toLowerCase());
+                if (encontrada && obj[encontrada]) return obj[encontrada];
+            }
+            return "";
+        }
+
+        window.cargarDatosCentrales = async function() {
+            const lblEstado = document.getElementById('estado-conexion');
+            lblEstado.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-200 border border-amber-400/30";
+            lblEstado.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-amber-400 rounded-full animate-pulse"></span> Consolidando Nodos...`;
+
+            try {
+                const [snapLegal, snapPsico, snapSocial] = await Promise.all([
+                    firebase.database().ref('legal').once('value'),
+                    firebase.database().ref('psicologia').once('value'),
+                    firebase.database().ref('social').once('value')
+                ]);
+
+                const dataLegal = snapLegal.val() || {};
+                const dataPsico = snapPsico.val() || {};
+                const dataSocial = snapSocial.val() || {};
+
+                const expedientesMap = new Map();
+
+                const procesarNodo = (data, modulo) => {
+                    Object.keys(data).forEach(key => {
+                        const reg = data[key];
+                        
+                        const dni = obtenerValorCamp(reg, 'dni', 'numDni', 'documento', 'num_doc') || "---";
+                        const exp = obtenerValorCamp(reg, 'numero_expediente', 'numExpediente', 'expediente', 'num_exp') || "---";
+                        
+                        // Capturamos apellidos y nombres de forma totalmente independiente
+                        const ape = obtenerValorCamp(reg, 'Apellidos', 'apellidos', 'apellido', 'paterno', 'materno', 'apellidosAdministrado');
+                        const nom = obtenerValorCamp(reg, 'Nombres', 'nombres', 'nombre', 'nombresAdministrado', 'nombresCompletos');
+
+                        const ht = obtenerValorCamp(reg, 'numHojaTramite', 'hojaTramite', 'ht', 'hoja_tramite') || "---";
+                        
+                        const especialistaStr = obtenerValorCamp(reg, 'especialista', 'responsable', 'abogado', 'psicologo', 'trabajadorSocial') || "";
+                        let eq = obtenerValorCamp(reg, 'equipo', 'turno', 'equipoAtencion');
+                        if (!eq && especialistaStr.toUpperCase().includes("EQUIPO")) {
+                            const match = especialistaStr.toUpperCase().match(/EQUIPO\s*(\d+)/);
+                            if (match) eq = `EQUIPO ${match[1]}`;
+                        }
+                        if (!eq) eq = "EQUIPO 1";
+
+                        const idUnico = (dni !== "---") ? dni : ((exp !== "---") ? exp : key);
+                        
+                        if (!expedientesMap.has(idUnico)) {
+                            expedientesMap.set(idUnico, {
+                                id: idUnico,
+                                apellidosAcumulados: "",
+                                nombresAcumulados: "",
+                                dni: dni,
+                                expediente: exp,
+                                ht: ht,
+                                equipo: eq,
+                                legal: null,
+                                psico: null,
+                                social: null
+                            });
+                        }
+                        
+                        const itemConsolidado = expedientesMap.get(idUnico);
+                        
+                        // Acumulamos apellidos y nombres si vienen en este nodo específico
+                        if (ape && ape !== "---" && ape.trim() !== "") {
+                            itemConsolidado.apellidosAcumulados = ape;
+                        }
+                        if (nom && nom !== "---" && nom.trim() !== "") {
+                            itemConsolidado.nombresAcumulados = nom;
+                        }
+
+                        if (itemConsolidado.dni === "---" && dni !== "---") itemConsolidado.dni = dni;
+                        if (itemConsolidado.expediente === "---" && exp !== "---") itemConsolidado.expediente = exp;
+                        if (itemConsolidado.ht === "---" && ht !== "---") itemConsolidado.ht = ht;
+                        if (itemConsolidado.equipo === "EQUIPO 1" && eq !== "EQUIPO 1") itemConsolidado.equipo = eq;
+
+                        const fechaBruta = obtenerValorCamp(reg, 'fechaRegistro', 'fecha', 'fechaVisita', 'fechaEvaluacion');
+
+                        if (modulo === 'legal') {
+                            itemConsolidado.legal = {
+                                estado: reg.estadoLegal || reg.estado || "REGISTRADO",
+                                resp: reg.especialista || reg.responsable || "---",
+                                det: reg.tipoAsesoria || reg.tipo_detalle || "-",
+                                fec: formatearFecha(fechaBruta),
+                                obs: reg.observaciones || "Sin observaciones registradas.",
+                                equipo: eq
+                            };
+                        } else if (modulo === 'psico') {
+                            itemConsolidado.psico = {
+                                estado: reg.estadoPsicologico || reg.estado || "REGISTRADO",
+                                resp: reg.especialista || reg.responsable || "---",
+                                det: reg.tipoAtencion || reg.intervencion || "-",
+                                fec: formatearFecha(fechaBruta),
+                                obs: reg.observaciones || "Sin observaciones registradas.",
+                                equipo: eq
+                            };
+                        } else if (modulo === 'social') {
+                            itemConsolidado.social = {
+                                estado: reg.estadoSocial || reg.estado || "REGISTRADO",
+                                resp: reg.especialista || reg.responsable || "---",
+                                det: reg.tipoIntervencion || reg.clasificacion || "-",
+                                fec: formatearFecha(fechaBruta),
+                                obs: reg.observaciones || "Sin observaciones registradas.",
+                                equipo: eq
+                            };
+                        }
+                    });
+                };
+
+                procesarNodo(dataLegal, 'legal');
+                procesarNodo(dataPsico, 'psico');
+                procesarNodo(dataSocial, 'social');
+
+                // Consolidación final del nombre completo uniendo apellidos y nombres recolectados de todos los nodos
+                BD_GLOBAL_TRAZABILIDAD = Array.from(expedientesMap.values()).map(item => {
+                    let nombreCompletoFinal = "---";
+                    const ap = item.apellidosAcumulados.trim();
+                    const nm = item.nombresAcumulados.trim();
+
+                    if (ap && nm) {
+                        nombreCompletoFinal = `${ap} ${nm}`;
+                    } else if (ap) {
+                        nombreCompletoFinal = ap;
+                    } else if (nm) {
+                        nombreCompletoFinal = nm;
+                    }
+
+                    item.administrado = nombreCompletoFinal;
+                    return item;
+                });
+
+                if (BD_GLOBAL_TRAZABILIDAD.length > 0) {
+                    lblEstado.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-200 border border-emerald-400/30";
+                    lblEstado.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-emerald-400 rounded-full"></span> Conectado (${BD_GLOBAL_TRAZABILIDAD.length} Registros)`;
+                } else {
+                    lblEstado.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-sky-500/20 text-sky-200 border border-sky-400/30";
+                    lblEstado.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-sky-400 rounded-full"></span> Sin Registros`;
+                }
+
+                window.actualizarDashboardGraficos();
+
+            } catch (error) {
+                console.error("Error al consolidar Firebase:", error);
+                lblEstado.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-rose-500/20 text-rose-200 border border-rose-400/30";
+                lblEstado.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-rose-400 rounded-full"></span> Error de Conexión`;
+            }
+        };
+
+        window.realizarBusquedaTrazabilidad = function() {
+            const criterio = document.getElementById('input-criterio').value.trim().toUpperCase();
+            if (!criterio) {
+                alert("Por favor ingrese un criterio de búsqueda.");
+                return;
+            }
+
+            const encontrado = BD_GLOBAL_TRAZABILIDAD.find(item => {
+                const jsonText = JSON.stringify(item).toUpperCase();
+                return jsonText.includes(criterio);
+            });
+
+            if (!encontrado) {
+                alert("No se encontraron registros activos en la base de datos para ese criterio.");
+                limpiarTarjetaTrazabilidad();
+                return;
+            }
+
+            document.getElementById('card-administrado').innerText = encontrado.administrado && encontrado.administrado !== "---" ? encontrado.administrado : "REGISTRO ENCONTRADO";
+            document.getElementById('card-dni').innerText = encontrado.dni || "---";
+            document.getElementById('card-exp').innerText = encontrado.expediente || "---";
+            document.getElementById('card-ht').innerText = encontrado.ht || "---";
+
+            const legal = encontrado.legal || { estado: "SIN REGISTRO", resp: "---", det: "-", fec: "-", obs: "Sin observaciones registradas." };
+            document.getElementById('badge-legal').innerText = legal.estado || "SIN REGISTRO";
+            document.getElementById('badge-legal').className = obtenerClaseBadge(legal.estado);
+            document.getElementById('resp-legal').innerText = legal.resp || "---";
+            document.getElementById('det-legal').innerText = legal.det || "-";
+            document.getElementById('fec-legal').innerText = legal.fec || "-";
+            document.getElementById('obs-legal').innerHTML = `PROVEÍDO / AVANCE: <strong>${legal.obs || "Sin observaciones registradas."}</strong>`;
+
+            const psico = encontrado.psico || { estado: "SIN REGISTRO", resp: "---", det: "-", fec: "-", obs: "Sin observaciones registradas." };
+            document.getElementById('badge-psico').innerText = psico.estado || "SIN REGISTRO";
+            document.getElementById('badge-psico').className = obtenerClaseBadge(psico.estado);
+            document.getElementById('resp-psico').innerText = psico.resp || "---";
+            document.getElementById('det-psico').innerText = psico.det || "-";
+            document.getElementById('fec-psico').innerText = psico.fec || "-";
+            document.getElementById('obs-psico').innerHTML = `PROVEÍDO / AVANCE: <strong>${psico.obs || "Sin observaciones registradas."}</strong>`;
+
+            const social = encontrado.social || { estado: "SIN REGISTRO", resp: "---", det: "-", fec: "-", obs: "Sin observaciones registradas." };
+            document.getElementById('badge-social').innerText = social.estado || "SIN REGISTRO";
+            document.getElementById('badge-social').className = obtenerClaseBadge(social.estado);
+            document.getElementById('resp-social').innerText = social.resp || "---";
+            document.getElementById('det-social').innerText = social.det || "-";
+            document.getElementById('fec-social').innerText = social.fec || "-";
+            document.getElementById('obs-social').innerHTML = `PROVEÍDO / AVANCE: <strong>${social.obs || "Sin observaciones registradas."}</strong>`;
+        };
+
+        function obtenerClaseBadge(estado) {
+            const est = String(estado || "").toUpperCase();
+            if (est.includes("CONCLUIDO") || est.includes("ATENDIDO") || est.includes("FAVORABLE") || est.includes("EMITIDO") || est.includes("APROBADO")) {
+                return "px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200";
+            } else if (est.includes("PROCESO") || est.includes("PENDIENTE") || est.includes("REGISTRADO") || est.includes("EN TRAMITE") || est.includes("EVALUACIÓN") || est.includes("PROGRAMADO")) {
+                return "px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200";
+            }
+            return "px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200";
+        }
+
+        function limpiarTarjetaTrazabilidad() {
+            document.getElementById('card-administrado').innerText = "-- REALICE UNA BÚSQUEDA --";
+            document.getElementById('card-dni').innerText = "---";
+            document.getElementById('card-exp').innerText = "---";
+            document.getElementById('card-ht').innerText = "---";
+            
+            ['legal', 'psico', 'social'].forEach(mod => {
+                document.getElementById(`badge-${mod}`).innerText = "SIN REGISTRO";
+                document.getElementById(`badge-${mod}`).className = "px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200";
+                document.getElementById(`resp-${mod}`).innerText = "---";
+                document.getElementById(`det-${mod}`).innerText = "-";
+                document.getElementById(`fec-${mod}`).innerText = "-";
+                document.getElementById(`obs-${mod}`).innerHTML = `PROVEÍDO / AVANCE: Sin observaciones registradas.`;
+            });
+        }
+
+        function esEstadoConcluido(est) {
+            const estado = String(est || "").toUpperCase();
+            if (!estado || estado === "SIN REGISTRO") return false;
+            return estado.includes("CONCLUIDO") || 
+                   estado.includes("ATENDIDO") ||
+                   estado.includes("EMITIDO") ||
+                   estado.includes("APROBADO");
+        }
+
+        window.actualizarDashboardGraficos = function() {
+            const fechaDesdeVal = document.getElementById('filtro-fecha-desde').value;
+            const fechaHastaVal = document.getElementById('filtro-fecha-hasta').value;
+            const especialidadVal = document.getElementById('filtro-especialidad').value;
+            const equipoVal = document.getElementById('filtro-equipo').value;
+
+            const fDesde = fechaDesdeVal ? parseFechaLocal(fechaDesdeVal) : null;
+            const fHasta = fechaHastaVal ? parseFechaLocal(fechaHastaVal) : null;
+            if (fHasta) fHasta.setHours(23, 59, 59, 999);
+
+            let datosFiltrados = BD_GLOBAL_TRAZABILIDAD.filter(item => {
+                if (equipoVal !== "TODOS") {
+                    const eqItem = (item.equipo || "").toUpperCase();
+                    if (!eqItem.includes(equipoVal)) return false;
+                }
+                return true;
+            });
+
+            let expedientesValidos = datosFiltrados.filter(item => {
+                const tieneLegal = item.legal && item.legal.estado && item.legal.estado !== "SIN REGISTRO";
+                const tienePsico = item.psico && item.psico.estado && item.psico.estado !== "SIN REGISTRO";
+                const tieneSocial = item.social && item.social.estado && item.social.estado !== "SIN REGISTRO";
+
+                if (especialidadVal === "LEGAL") return tieneLegal;
+                if (especialidadVal === "PSICOLOGIA") return tienePsico;
+                if (especialidadVal === "SOCIAL") return tieneSocial;
+                return tieneLegal || tienePsico || tieneSocial;
+            });
+
+            let kpiCargaTotal = expedientesValidos.length;
+            let kpiConcluidos = 0;
+            let kpiPendientes = 0;
+            let casosEnEvaluacion = 0;
+
+            let legalConc = 0, legalPend = 0;
+            let psicoConc = 0, psicoPend = 0;
+            let socialConc = 0, socialPend = 0;
+
+            const equiposCarga = { "Eq. 1": 0, "Eq. 2": 0, "Eq. 3": 0, "Eq. 4": 0, "Eq. 5": 0, "Eq. 6": 0 };
+
+            expedientesValidos.forEach(item => {
+                let lConc = item.legal && esEstadoConcluido(item.legal.estado);
+                let pConc = item.psico && esEstadoConcluido(item.psico.estado);
+                let sConc = item.social && esEstadoConcluido(item.social.estado);
+
+                let expedienteConcluido = (lConc || pConc || sConc);
+                if (especialidadVal === "LEGAL") expedienteConcluido = lConc;
+                else if (especialidadVal === "PSICOLOGIA") expedienteConcluido = pConc;
+                else if (especialidadVal === "SOCIAL") expedienteConcluido = sConc;
+
+                if (expedienteConcluido) kpiConcluidos++;
+                else kpiPendientes++;
+
+                [item.legal, item.psico, item.social].forEach(mod => {
+                    if (mod && mod.estado && mod.estado.toUpperCase().includes("EVALUACIÓN")) casosEnEvaluacion++;
+                });
+
+                if (item.legal && item.legal.estado !== "SIN REGISTRO") {
+                    if (esEstadoConcluido(item.legal.estado)) legalConc++; else legalPend++;
+                }
+                if (item.psico && item.psico.estado !== "SIN REGISTRO") {
+                    if (esEstadoConcluido(item.psico.estado)) psicoConc++; else psicoPend++;
+                }
+                if (item.social && item.social.estado !== "SIN REGISTRO") {
+                    if (esEstadoConcluido(item.social.estado)) socialConc++; else socialPend++;
+                }
+
+                const eqStr = (item.equipo || "").toUpperCase();
+                if (eqStr.includes("2")) equiposCarga["Eq. 2"]++;
+                else if (eqStr.includes("3")) equiposCarga["Eq. 3"]++;
+                else if (eqStr.includes("4")) equiposCarga["Eq. 4"]++;
+                else if (eqStr.includes("5")) equiposCarga["Eq. 5"]++;
+                else if (eqStr.includes("6")) equiposCarga["Eq. 6"]++;
+                else equiposCarga["Eq. 1"]++;
+            });
+
+            if ((kpiConcluidos + kpiPendientes) !== kpiCargaTotal) {
+                kpiPendientes = kpiCargaTotal - kpiConcluidos;
+            }
+
+            let eficienciaCalc = 0.0;
+            if (kpiCargaTotal > 0) {
+                const puntajeEquidad = kpiConcluidos + (casosEnEvaluacion * 0.5);
+                eficienciaCalc = Math.min(100, ((puntajeEquidad / kpiCargaTotal) * 100)).toFixed(1);
+            }
+
+            document.getElementById('kpi-carga-total').innerText = kpiCargaTotal;
+            document.getElementById('kpi-concluidos').innerText = kpiConcluidos;
+            document.getElementById('kpi-pendientes').innerText = kpiPendientes;
+            document.getElementById('kpi-eficiencia').innerText = `${eficienciaCalc}%`;
+
+            let labelsEsp = ['Legal ⚖️', 'Psicología 🧠', 'Trabajo Social 🏠'];
+            let dataConcluidoEsp = [legalConc, psicoConc, socialConc];
+            let dataPendienteEsp = [legalPend, psicoPend, socialPend];
+
+            if (especialidadVal === "LEGAL") {
+                labelsEsp = ['Legal ⚖️'];
+                dataConcluidoEsp = [legalConc];
+                dataPendienteEsp = [legalPend];
+            } else if (especialidadVal === "PSICOLOGIA") {
+                labelsEsp = ['Psicología 🧠'];
+                dataConcluidoEsp = [psicoConc];
+                dataPendienteEsp = [psicoPend];
+            } else if (especialidadVal === "SOCIAL") {
+                labelsEsp = ['Trabajo Social 🏠'];
+                dataConcluidoEsp = [socialConc];
+                dataPendienteEsp = [socialPend];
+            }
+
+            const ctxEsp = document.getElementById('chartEspecialidad').getContext('2d');
+            if (chartEspecialidadInstance) chartEspecialidadInstance.destroy();
+            chartEspecialidadInstance = new Chart(ctxEsp, {
+                type: 'bar',
+                data: {
+                    labels: labelsEsp,
+                    datasets: [
+                        { label: 'Concluidos / Emitidos', data: dataConcluidoEsp, backgroundColor: '#10b981', borderRadius: 6 },
+                        { label: 'En Proceso / Pendientes', data: dataPendienteEsp, backgroundColor: '#f59e0b', borderRadius: 6 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+
+            const ctxEq = document.getElementById('chartEquipos').getContext('2d');
+            if (chartEquiposInstance) chartEquiposInstance.destroy();
+            chartEquiposInstance = new Chart(ctxEq, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(equiposCarga),
+                    datasets: [{ label: 'Expedientes por Equipo', data: Object.values(equiposCarga), backgroundColor: '#0284c7', borderRadius: 6 }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+        };
+    </script>
+</body>
+</html>

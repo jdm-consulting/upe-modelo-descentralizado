@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo de Psicología</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; }
+        .tab-btn.active { border-bottom: 3px solid #7c3aed; color: #7c3aed; font-weight: 700; background-color: #f5f3ff; }
+        input, select, textarea { text-transform: uppercase; }
+        input::placeholder, textarea::placeholder { text-transform: none; }
+    </style>
+</head>
+<body>
+
+<!-- MODAL DE ACCESO -->
+<div id="modalLogin" style="display: flex;" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-200">
+        <div class="text-center space-y-2">
+            <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-brain"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800">MÓDULO DE PSICOLOGÍA</h2>
+            <p class="text-xs text-slate-500">Seleccione su perfil para ingresar al sistema.</p>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">USUARIO / PERFIL:*</label>
+                <select id="loginUsuario" class="w-full text-sm p-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none font-medium">
+                    <option value="">-- SELECCIONE PERFIL --</option>
+                    <option value="PSICÓLOGO - EQUIPO 1">PSICÓLOGO - EQUIPO 1</option>
+                    <option value="PSICÓLOGO - EQUIPO 2">PSICÓLOGO - EQUIPO 2</option>
+                    <option value="PSICÓLOGO - EQUIPO 3">PSICÓLOGO - EQUIPO 3</option>
+                    <option value="PSICÓLOGO - EQUIPO 4">PSICÓLOGO - EQUIPO 4</option>
+                    <option value="PSICÓLOGO - EQUIPO 5">PSICÓLOGO - EQUIPO 5</option>
+                    <option value="PSICÓLOGO - EQUIPO 6">PSICÓLOGO - EQUIPO 6</option>
+                </select>
+            </div>
+            <button type="button" onclick="iniciarSesion()" class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-sm transition shadow-lg flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-right-to-bracket"></i> INGRESAR AL SISTEMA
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL VISOR DETALLADO DE EXPEDIENTE -->
+<div id="modalVisor" style="display: none;" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl max-w-2xl w-full p-6 space-y-4 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b pb-3">
+            <div class="flex items-center gap-2">
+                <div class="w-9 h-9 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-eye"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">DETALLE DEL EXPEDIENTE PSICOLÓGICO</h3>
+                    <p class="text-[11px] text-slate-500">Información completa registrada en el sistema</p>
+                </div>
+            </div>
+            <button onclick="cerrarVisor()" class="text-slate-400 hover:text-slate-600 text-lg font-bold px-2 py-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        
+        <div id="contenidoVisor" class="space-y-4 text-xs text-slate-700"></div>
+
+        <div class="flex justify-end pt-2 border-t">
+            <button onclick="cerrarVisor()" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-lg text-xs transition">CERRAR</button>
+        </div>
+    </div>
+</div>
+
+<!-- CONTENEDOR PRINCIPAL -->
+<div class="max-w-7xl mx-auto my-6 bg-white rounded-xl shadow-xl overflow-hidden border border-slate-200">
+    <div class="bg-slate-900 text-white p-5 flex flex-col md:flex-row items-center justify-between border-b-4 border-purple-600">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-brain text-3xl text-purple-400"></i>
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold tracking-wide">MÓDULO DE PSICOLOGÍA</h1>
+                <p class="text-xs text-slate-400">SISTEMA MULTIDISCIPLINARIO DE EXPEDIENTES</p>
+            </div>
+        </div>
+        <div class="mt-3 md:mt-0 flex items-center gap-3">
+            <span id="badgeRolActivo" class="px-3 py-1 bg-slate-800 text-purple-300 text-xs rounded-full font-semibold border border-slate-700 flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-user"></i> SIN SESIÓN
+            </span>
+            <button onclick="cerrarSesion()" class="px-3 py-1 bg-rose-600/80 hover:bg-rose-600 text-white text-xs rounded-full transition flex items-center gap-1">
+                <i class="fa-solid fa-power-off"></i> SALIR
+            </button>
+        </div>
+    </div>
+
+    <div class="flex border-b border-slate-200 bg-slate-100 text-slate-600 text-sm font-semibold">
+        <button onclick="cambiarPestana('tab-formulario')" id="btn-tab-formulario" class="tab-btn active px-6 py-3.5 flex items-center gap-2 transition hover:text-purple-600">
+            <i class="fa-solid fa-pen-to-square"></i> FORMULARIO DE REGISTRO
+        </button>
+        <button onclick="cambiarPestana('tab-registros')" id="btn-tab-registros" class="tab-btn px-6 py-3.5 flex items-center gap-2 transition hover:text-purple-600">
+            <i class="fa-solid fa-table-list"></i> REGISTROS INGRESADOS
+            <span id="badgeContador" class="ml-1 px-2 py-0.5 text-xs bg-purple-600 text-white rounded-full">0</span>
+        </button>
+        <button onclick="cambiarPestana('tab-dashboard')" id="btn-tab-dashboard" class="tab-btn px-6 py-3.5 flex items-center gap-2 transition hover:text-purple-600">
+            <i class="fa-solid fa-chart-line"></i> DASHBOARD E INDICADORES
+        </button>
+    </div>
+
+    <div class="p-6">
+        <div id="tab-formulario" class="tab-content">
+            <form id="psicologiaForm" onsubmit="return guardarRegistro(event)" class="space-y-6">
+                <input type="hidden" id="editIndex" value="-1">
+
+                <div class="space-y-3">
+                    <div class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-md text-xs font-bold tracking-wide border border-purple-200">
+                        1. ASIGNACIÓN INSTITUCIONAL
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50/50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">TURNO DE ASIGNACIÓN *</label>
+                            <select id="turnoAsignacion" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <option value="">SELECCIONE TURNO</option>
+                                <option value="MAÑANA">MAÑANA</option>
+                                <option value="TARDE">TARDE</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">PSICÓLOGO / EQUIPO *</label>
+                            <select id="especialista" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <option value="">SELECCIONE PSICÓLOGO</option>
+                                <option value="PSICÓLOGO - EQUIPO 1">PSICÓLOGO - EQUIPO 1</option>
+                                <option value="PSICÓLOGO - EQUIPO 2">PSICÓLOGO - EQUIPO 2</option>
+                                <option value="PSICÓLOGO - EQUIPO 3">PSICÓLOGO - EQUIPO 3</option>
+                                <option value="PSICÓLOGO - EQUIPO 4">PSICÓLOGO - EQUIPO 4</option>
+                                <option value="PSICÓLOGO - EQUIPO 5">PSICÓLOGO - EQUIPO 5</option>
+                                <option value="PSICÓLOGO - EQUIPO 6">PSICÓLOGO - EQUIPO 6</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">FECHA DE REGISTRO *</label>
+                            <input type="date" id="fechaRegistro" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-md text-xs font-bold tracking-wide border border-purple-200">
+                        2. DATOS DEL TRÁMITE INSTITUCIONAL
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50/50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">FECHA DE EVALUACIÓN *</label>
+                            <input type="date" id="fechaEvaluacion" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">HOJA DE TRÁMITE (HT) *</label>
+                            <div class="flex gap-1">
+                                <input type="text" id="numHojaTramiteCorrelativo" placeholder="EJ: 123456" required class="w-3/5 text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <select id="numHojaTramiteAnio" required class="w-2/5 text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500"></select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">N° DE EXPEDIENTE *</label>
+                            <div class="flex gap-1">
+                                <input type="text" id="numExpedienteCorrelativo" placeholder="EJ: 456789" required class="w-3/5 text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <select id="numExpedienteAnio" required class="w-2/5 text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500"></select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">N° FOLIOS *</label>
+                            <input type="number" id="numFolios" min="1" placeholder="EJ: 25" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-md text-xs font-bold tracking-wide border border-purple-200">
+                        3. DATOS DE LA PERSONA / ADMINISTRADO
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50/50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">APELLIDOS COMPLETOS *</label>
+                            <input type="text" id="apellidosCompletos" required placeholder="GARCÍA LÓPEZ" class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">NOMBRES COMPLETOS *</label>
+                            <input type="text" id="nombresCompletos" required placeholder="MARÍA ELENA" class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">SEXO *</label>
+                            <select id="sexo" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <option value="">SELECCIONE</option>
+                                <option value="MASCULINO">MASCULINO</option>
+                                <option value="FEMENINO">FEMENINO</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">DNI / DOCUMENTO (8 DÍGITOS) *</label>
+                            <input type="text" id="dni" maxlength="8" pattern="[0-9]{8}" required placeholder="99999999" class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">FECHA DE NACIMIENTO</label>
+                            <input type="date" id="fechaNacimiento" onchange="calcularEdad()" class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">EDAD (AUTOCÁLCULO)</label>
+                            <input type="number" id="edad" readonly placeholder="0" class="w-full text-sm p-2.5 bg-slate-100 border border-slate-300 rounded-lg text-slate-600 font-semibold">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">DISTRITO DE RESIDENCIA *</label>
+                            <select id="distritoResidencia" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <option value="">SELECCIONE DISTRITO</option>
+                                <option value="CHORRILLOS">CHORRILLOS</option>
+                                <option value="LURÍN">LURÍN</option>
+                                <option value="PACHACAMAC">PACHACAMAC</option>
+                                <option value="PUCUSANA">PUCUSANA</option>
+                                <option value="SAN JUAN DE MIRAFLORES">SAN JUAN DE MIRAFLORES</option>
+                                <option value="VILLA EL SALVADOR">VILLA EL SALVADOR</option>
+                                <option value="VILLA MARÍA DEL TRIUNFO">VILLA MARÍA DEL TRIUNFO</option>
+                                <option value="OTRO">OTRO</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-md text-xs font-bold tracking-wide border border-purple-200">
+                        4. EVALUACIÓN PSICOLÓGICA Y ACCIONES
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">ESTADO PSICOLÓGICO / DIAGNÓSTICO *</label>
+                            <select id="estadoPsicologico" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <option value="">SELECCIONE ESTADO</option>
+                                <option value="1. EN EVALUACIÓN PSICOLÓGICA">1. EN EVALUACIÓN PSICOLÓGICA</option>
+                                <option value="2. INFORME PSICOLÓGICO EMITIDO">2. INFORME PSICOLÓGICO EMITIDO</option>
+                                <option value="3. DERIVADO A ATENCIÓN ESPECIALIZADA">3. DERIVADO A ATENCIÓN ESPECIALIZADA</option>
+                                <option value="4. CONCLUIDO / ALTA PSICOLÓGICA">4. CONCLUIDO / ALTA PSICOLÓGICA</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">TIPO DE ATENCIÓN / INTERVENCIÓN *</label>
+                            <select id="tipoAtencion" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <option value="">SELECCIONE TIPO DE ATENCIÓN</option>
+                                <option value="EVALUACIÓN PSICOLÓGICA INTEGRAL">EVALUACIÓN PSICOLÓGICA INTEGRAL</option>
+                                <option value="INTERVENCIÓN EN CRISIS">INTERVENCIÓN EN CRISIS</option>
+                                <option value="ACOMPAÑAMIENTO Y SOPORTE EMOCIONAL">ACOMPAÑAMIENTO Y SOPORTE EMOCIONAL</option>
+                                <option value="SESIÓN DE ORIENTACIÓN PSICOLÓGICA">SESIÓN DE ORIENTACIÓN PSICOLÓGICA</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">CONCLUSIONES / OBSERVACIONES PSICOLÓGICAS *</label>
+                            <textarea id="observaciones" rows="3" required placeholder="RESUMEN DE EVALUACIÓN PSICOMÉTRICA, ESTADO EMOCIONAL, RECOMENDACIONES TÉCNICAS Y MEDIDAS ADOPTADAS..." class="w-full text-sm p-3 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="limpiarFormulario()" class="px-5 py-2.5 bg-slate-500 hover:bg-slate-600 text-white font-semibold rounded-lg text-sm transition">LIMPIAR</button>
+                    <button type="submit" id="btnGuardarText" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-sm shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> REGISTRAR EXPEDIENTE
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div id="tab-registros" class="tab-content hidden space-y-4">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800">BANDEJA DE EXPEDIENTES PSICOLÓGICOS</h2>
+                    <p class="text-xs text-slate-500">Historial de informes y evaluaciones psicológicas registradas.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="sincronizarConFirebase()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm shadow transition flex items-center gap-2">
+                        <i class="fa-solid fa-rotate"></i> ACTUALIZAR DESDE LA NUBE
+                    </button>
+                    <button onclick="exportarExcel()" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-sm shadow transition flex items-center gap-2">
+                        <i class="fa-solid fa-file-excel text-lg"></i> EXPORTAR A EXCEL (.XLSX)
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-purple-50/50 p-3.5 rounded-lg border border-purple-200/80 flex flex-col md:flex-row items-center justify-between gap-3">
+                <div class="w-full md:w-2/3 flex items-center gap-2">
+                    <input type="text" id="inputBusqueda" onkeyup="if(event.key==='Enter') ejecutarBusqueda()" placeholder="Buscar por Código, N° Expediente, Hoja de Trámite o DNI..." class="w-full px-3 py-2 bg-white text-xs border border-slate-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:outline-none uppercase">
+                    <button type="button" onclick="ejecutarBusqueda()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-md text-xs transition">BUSCAR</button>
+                    <button type="button" onclick="limpiarBusqueda()" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-md text-xs transition">LIMPIAR</button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-lg border border-slate-200">
+                <table class="w-full text-xs text-left text-slate-700">
+                    <thead class="text-xs text-white uppercase bg-slate-800">
+                        <tr>
+                            <th class="p-3">Código</th>
+                            <th class="p-3">Turno / Psicólogo</th>
+                            <th class="p-3">N° Expediente</th>
+                            <th class="p-3">Hoja Trámite (HT)</th>
+                            <th class="p-3">Administrado</th>
+                            <th class="p-3">DNI</th>
+                            <th class="p-3">Tipo Atención</th>
+                            <th class="p-3">Estado Psicológico</th>
+                            <th class="p-3 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaCuerpo" class="divide-y divide-slate-200 bg-white"></tbody>
+                </table>
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+                <span id="infoPaginacion" class="text-xs text-slate-500">Mostrando página 1</span>
+                <div class="flex gap-2">
+                    <button onclick="cambiarPagina(-1)" id="btnPagPrev" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded text-xs transition">ANTERIOR</button>
+                    <button onclick="cambiarPagina(1)" id="btnPagNext" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded text-xs transition">SIGUIENTE</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-dashboard" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-purple-50 border border-purple-200 p-4 rounded-xl flex items-center gap-4">
+                    <div class="p-3 bg-purple-600 text-white rounded-lg text-xl"><i class="fa-solid fa-folder-open"></i></div>
+                    <div>
+                        <p class="text-xs font-semibold text-purple-700 uppercase">Total Expedientes</p>
+                        <h3 id="kpiTotal" class="text-2xl font-black text-purple-900">0</h3>
+                    </div>
+                </div>
+                <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-xl flex items-center gap-4">
+                    <div class="p-3 bg-indigo-600 text-white rounded-lg text-xl"><i class="fa-solid fa-file-signature"></i></div>
+                    <div>
+                        <p class="text-xs font-semibold text-indigo-700 uppercase">Informes Emitidos</p>
+                        <h3 id="kpiAtendidos" class="text-2xl font-black text-indigo-900">0</h3>
+                    </div>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-center gap-4">
+                    <div class="p-3 bg-amber-600 text-white rounded-lg text-xl"><i class="fa-solid fa-hourglass-half"></i></div>
+                    <div>
+                        <p class="text-xs font-semibold text-amber-700 uppercase">En Evaluación</p>
+                        <h3 id="kpiProceso" class="text-2xl font-black text-amber-900">0</h3>
+                    </div>
+                </div>
+                <div class="bg-teal-50 border border-teal-200 p-4 rounded-xl flex items-center gap-4">
+                    <div class="p-3 bg-teal-600 text-white rounded-lg text-xl"><i class="fa-solid fa-chart-pie"></i></div>
+                    <div>
+                        <p class="text-xs font-semibold text-teal-700 uppercase">% Cobertura</p>
+                        <h3 id="kpiEficacia" class="text-2xl font-black text-teal-900">0%</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                <div class="bg-white p-5 border border-slate-200 rounded-xl shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-800 mb-4">Expedientes por Equipo de Psicólogos</h3>
+                    <div class="relative w-full h-[260px]">
+                        <canvas id="chartEspecialista"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-5 border border-slate-200 rounded-xl shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-800 mb-4">Tipos de Atención Psicológica</h3>
+                    <div class="relative w-full h-[260px]">
+                        <canvas id="chartTipo"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const FIREBASE_DB_URL = "https://upe-control-multidisciplinario-default-rtdb.firebaseio.com";
+    let usuarioActivo = null;
+
+    let registros = JSON.parse(localStorage.getItem('expedientes_psicologia_db')) || [];
+    let chartEsp = null, chartTip = null;
+    let paginaActual = 1;
+    const registrosPorPagina = 10;
+    let listaFiltradaActual = null;
+    let datosOriginalesEdicion = null;
+
+    function formatearFecha(fechaStr) {
+        if (!fechaStr) return '-';
+        const partes = fechaStr.split('-');
+        if (partes.length === 3 && partes[0].length === 4) {
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+        return fechaStr;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const hoy = new Date().toISOString().split('T')[0];
+        if (document.getElementById('fechaRegistro')) document.getElementById('fechaRegistro').value = hoy;
+        if (document.getElementById('fechaEvaluacion')) document.getElementById('fechaEvaluacion').value = hoy;
+        
+        const anioActual = new Date().getFullYear();
+        const selectsAnio = ['numHojaTramiteAnio', 'numExpedienteAnio'];
+        
+        selectsAnio.forEach(id => {
+            const sel = document.getElementById(id);
+            if (sel) {
+                sel.innerHTML = '<option value="">AÑO</option>';
+                for (let anio = 2000; anio <= 2035; anio++) {
+                    let option = document.createElement('option');
+                    option.value = anio;
+                    option.textContent = anio;
+                    if (anio === anioActual) option.selected = true;
+                    sel.appendChild(option);
+                }
+            }
+        });
+
+        document.querySelectorAll('input[type="text"], textarea').forEach(el => {
+            el.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+            });
+        });
+
+        sincronizarConFirebase(true);
+    });
+
+    async function sincronizarConFirebase(silencioso = false) {
+        try {
+            const response = await fetch(`${FIREBASE_DB_URL}/psicologia.json`);
+            const data = await response.json();
+            
+            if (data) {
+                registros = Object.values(data);
+                localStorage.setItem('expedientes_psicologia_db', JSON.stringify(registros));
+            } else {
+                registros = JSON.parse(localStorage.getItem('expedientes_psicologia_db')) || [];
+            }
+
+            if (!silencioso) alert("✅ Sincronización exitosa desde Firebase.");
+            if (usuarioActivo) actualizarTabla();
+        } catch (err) {
+            console.error("Error al conectar con Firebase:", err);
+            registros = JSON.parse(localStorage.getItem('expedientes_psicologia_db')) || [];
+            if (!silencioso) alert("⚠️ Error de conexión con la nube, mostrando datos locales.");
+        }
+    }
+
+    function calcularEdad() {
+        const fechaNac = document.getElementById('fechaNacimiento').value;
+        if (!fechaNac) return;
+        const hoy = new Date();
+        const cumpleanos = new Date(fechaNac);
+        let edad = hoy.getFullYear() - cumpleanos.getFullYear();
+        const m = hoy.getMonth() - cumpleanos.getMonth();
+        if (m < 0 || (m === 0 && hoy.getDate() < cumpleanos.getDate())) edad--;
+        document.getElementById('edad').value = edad >= 0 ? edad : 0;
+    }
+
+    function iniciarSesion() {
+        const selectUsr = document.getElementById("loginUsuario");
+        const usr = selectUsr ? selectUsr.value : "";
+        if (!usr) {
+            alert("Por favor, seleccione su perfil para ingresar.");
+            return;
+        }
+        usuarioActivo = usr;
+        
+        document.getElementById("badgeRolActivo").innerHTML = `<i class="fa-solid fa-user-check"></i> ${usr}`;
+        const campoEsp = document.getElementById("especialista");
+        if (campoEsp) {
+            campoEsp.value = usr;
+            campoEsp.disabled = true;
+        }
+
+        const modal = document.getElementById("modalLogin");
+        if (modal) {
+            modal.style.display = "none";
+            modal.classList.add("hidden");
+        }
+        actualizarTabla();
+    }
+
+    function cerrarSesion() {
+        usuarioActivo = null;
+        const modal = document.getElementById("modalLogin");
+        if (modal) {
+            modal.classList.remove("hidden");
+            modal.style.display = "flex";
+        }
+    }
+
+    function cambiarPestana(tabId) {
+        document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
+        document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+        document.getElementById(tabId).classList.remove("hidden");
+        document.getElementById("btn-" + tabId).classList.add("active");
+
+        if (tabId === 'tab-registros') actualizarTabla();
+        if (tabId === 'tab-dashboard') actualizarDashboard();
+    }
+
+    function obtenerRegistrosPermitidos() {
+        return registros.filter(r => r.especialista === usuarioActivo);
+    }
+
+    async function guardarRegistro(e) {
+        if (e) e.preventDefault();
+        const btn = document.getElementById('btnGuardarText');
+        if (btn) btn.disabled = true;
+
+        const editIndex = parseInt(document.getElementById("editIndex").value);
+
+        let codigoGenerado;
+        if (editIndex >= 0 && registros[editIndex].codigo) {
+            codigoGenerado = registros[editIndex].codigo;
+        } else {
+            const maxNum = registros.length > 0 ? Math.max(...registros.map(r => {
+                let codStr = String(r.codigo || 'PSI-0');
+                return parseInt(codStr.replace('PSI-', '')) || 0;
+            })) : 0;
+            codigoGenerado = 'PSI-' + String(maxNum + 1).padStart(4, '0');
+        }
+
+        const htCorr = document.getElementById("numHojaTramiteCorrelativo").value.trim();
+        const htAnio = document.getElementById("numHojaTramiteAnio").value;
+        const expCorr = document.getElementById("numExpedienteCorrelativo").value.trim();
+        const expAnio = document.getElementById("numExpedienteAnio").value;
+
+        const reg = {
+            codigo: codigoGenerado,
+            modulo: "PSICOLOGIA",
+            modulo_origen: "PSICOLOGIA",
+            turnoAsignacion: document.getElementById("turnoAsignacion").value,
+            especialista: document.getElementById("especialista").value,
+            fechaRegistro: document.getElementById("fechaRegistro").value,
+            fechaEvaluacion: document.getElementById("fechaEvaluacion").value,
+            numHojaTramite: htCorr + "-" + htAnio,
+            numExpediente: expCorr + "-" + expAnio,
+            numFolios: parseInt(document.getElementById("numFolios").value) || 0,
+            apellidosCompletos: document.getElementById("apellidosCompletos").value.toUpperCase(),
+            nombresCompletos: document.getElementById("nombresCompletos").value.toUpperCase(),
+            sexo: document.getElementById("sexo").value,
+            dni: document.getElementById("dni").value,
+            fechaNacimiento: document.getElementById("fechaNacimiento").value,
+            edad: parseInt(document.getElementById("edad").value) || 0,
+            distritoResidencia: document.getElementById("distritoResidencia").value,
+            estadoPsicologico: document.getElementById("estadoPsicologico").value,
+            tipoAtencion: document.getElementById("tipoAtencion").value,
+            observaciones: document.getElementById("observaciones").value.toUpperCase()
+        };
+
+        if (editIndex >= 0) {
+            registros[editIndex] = reg;
+        } else {
+            registros.unshift(reg);
+        }
+
+        localStorage.setItem('expedientes_psicologia_db', JSON.stringify(registros));
+
+        try {
+            await fetch(`${FIREBASE_DB_URL}/psicologia/${codigoGenerado}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reg)
+            });
+            console.log("✅ Expediente de psicología guardado en Firebase.");
+        } catch (err) {
+            console.error("❌ Error al guardar en Firebase:", err);
+        }
+
+        alert(editIndex >= 0 ? "✅ Expediente actualizado correctamente." : "✅ Expediente registrado con éxito. Código: " + codigoGenerado);
+
+        limpiarFormulario();
+        if (btn) btn.disabled = false;
+        cambiarPestana('tab-registros');
+        return false;
+    }
+
+    function verDetalleRegistro(indexEnBase) {
+        const r = registros[indexEnBase];
+        if (!r) return;
+
+        const html = `
+            <div class="space-y-3">
+                <div class="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                    <span class="font-bold text-purple-900 block mb-1">INFORMACIÓN GENERAL DEL REGISTRO</span>
+                    <div class="grid grid-cols-2 gap-2 text-slate-700">
+                        <div><strong>Código Único:</strong> <span class="font-mono text-purple-700 font-bold">${r.codigo || '-'}</span></div>
+                        <div><strong>Turno:</strong> ${r.turnoAsignacion || '-'}</div>
+                        <div><strong>Psicólogo / Equipo:</strong> ${r.especialista || '-'}</div>
+                        <div><strong>Fecha de Registro:</strong> ${formatearFecha(r.fechaRegistro)}</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <span class="font-bold text-slate-800 block mb-1">2. DATOS DEL TRÁMITE INSTITUCIONAL</span>
+                    <div class="grid grid-cols-2 gap-2 text-slate-700">
+                        <div><strong>Fecha de Evaluación:</strong> ${formatearFecha(r.fechaEvaluacion)}</div>
+                        <div><strong>N° Hoja de Trámite (HT):</strong> <span class="font-mono text-purple-700">${r.numHojaTramite || '-'}</span></div>
+                        <div><strong>N° de Expediente:</strong> <span class="font-mono text-purple-700">${r.numExpediente || '-'}</span></div>
+                        <div><strong>N° Folios:</strong> ${r.numFolios || '-'}</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <span class="font-bold text-slate-800 block mb-1">3. DATOS DEL ADMINISTRADO</span>
+                    <div class="grid grid-cols-2 gap-2 text-slate-700">
+                        <div><strong>Apellidos y Nombres:</strong> ${r.apellidosCompletos || ''} ${r.nombresCompletos || ''}</div>
+                        <div><strong>DNI:</strong> ${r.dni || '-'}</div>
+                        <div><strong>Sexo:</strong> ${r.sexo || '-'}</div>
+                        <div><strong>Edad:</strong> ${r.edad || '-'} años</div>
+                        <div><strong>Fecha de Nacimiento:</strong> ${formatearFecha(r.fechaNacimiento)}</div>
+                        <div><strong>Distrito de Residencia:</strong> ${r.distritoResidencia || '-'}</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <span class="font-bold text-slate-800 block mb-1">4. EVALUACIÓN Y OBSERVACIONES</span>
+                    <div class="space-y-1 text-slate-700">
+                        <div><strong>Tipo de Atención:</strong> ${r.tipoAtencion || '-'}</div>
+                        <div><strong>Estado Psicológico:</strong> <span class="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-[11px] font-semibold">${r.estadoPsicologico || '-'}</span></div>
+                        <div><strong>Conclusiones / Observaciones:</strong></div>
+                        <p class="bg-white p-2.5 rounded border border-slate-200 text-slate-800 whitespace-pre-wrap mt-1">${r.observaciones || '-'}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById("contenidoVisor").innerHTML = html;
+        const modal = document.getElementById("modalVisor");
+        if (modal) {
+            modal.style.display = "flex";
+            modal.classList.remove("hidden");
+        }
+    }
+
+    function cerrarVisor() {
+        const modal = document.getElementById("modalVisor");
+        if (modal) {
+            modal.style.display = "none";
+            modal.classList.add("hidden");
+        }
+    }
+
+    function editarRegistro(indexEnBase) {
+        const r = registros[indexEnBase];
+        if (!r) return;
+
+        datosOriginalesEdicion = JSON.parse(JSON.stringify(r));
+
+        document.getElementById("editIndex").value = indexEnBase;
+        document.getElementById("turnoAsignacion").value = r.turnoAsignacion || "";
+        document.getElementById("especialista").value = r.especialista || "";
+        document.getElementById("fechaRegistro").value = r.fechaRegistro || "";
+        document.getElementById("fechaEvaluacion").value = r.fechaEvaluacion || "";
+
+        if (r.numHojaTramite) {
+            const partesHT = r.numHojaTramite.split("-");
+            document.getElementById("numHojaTramiteCorrelativo").value = partesHT[0] || "";
+            if (partesHT[1]) document.getElementById("numHojaTramiteAnio").value = partesHT[1];
+        }
+
+        if (r.numExpediente) {
+            const partesExp = r.numExpediente.split("-");
+            document.getElementById("numExpedienteCorrelativo").value = partesExp[0] || "";
+            if (partesExp[1]) document.getElementById("numExpedienteAnio").value = partesExp[1];
+        }
+
+        document.getElementById("numFolios").value = r.numFolios || "";
+        document.getElementById("apellidosCompletos").value = r.apellidosCompletos || "";
+        document.getElementById("nombresCompletos").value = r.nombresCompletos || "";
+        document.getElementById("sexo").value = r.sexo || "";
+        document.getElementById("dni").value = r.dni || "";
+        document.getElementById("fechaNacimiento").value = r.fechaNacimiento || "";
+        document.getElementById("edad").value = r.edad || "";
+        document.getElementById("distritoResidencia").value = r.distritoResidencia || "";
+        document.getElementById("estadoPsicologico").value = r.estadoPsicologico || "";
+        document.getElementById("tipoAtencion").value = r.tipoAtencion || "";
+        document.getElementById("observaciones").value = r.observaciones || "";
+
+        const btnGuardar = document.getElementById("btnGuardarText");
+        if (btnGuardar) {
+            btnGuardar.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ACTUALIZAR EXPEDIENTE`;
+        }
+
+        cambiarPestana('tab-formulario');
+    }
+
+    async function borrarRegistro(indexEnBase) {
+        const r = registros[indexEnBase];
+        if (!r) return;
+
+        if (!confirm("¿Está seguro de eliminar este expediente psicológico?")) return;
+
+        try {
+            if (r.codigo) {
+                await fetch(`${FIREBASE_DB_URL}/psicologia/${r.codigo}.json`, { method: 'DELETE' });
+            }
+        } catch (err) {
+            console.error("Error eliminando de Firebase:", err);
+        }
+
+        registros.splice(indexEnBase, 1);
+        localStorage.setItem('expedientes_psicologia_db', JSON.stringify(registros));
+        actualizarTabla();
+        alert("🗑️ Expediente eliminado correctamente.");
+    }
+
+    function ejecutarBusqueda() {
+        const texto = document.getElementById("inputBusqueda").value.trim().toUpperCase();
+        if (!texto) {
+            listaFiltradaActual = null;
+        } else {
+            listaFiltradaActual = registros.map((r, idx) => ({ ...r, idxOriginal: idx })).filter(r => 
+                (r.codigo && r.codigo.includes(texto)) ||
+                (r.numExpediente && r.numExpediente.includes(texto)) ||
+                (r.numHojaTramite && r.numHojaTramite.includes(texto)) ||
+                (r.dni && r.dni.includes(texto)) ||
+                (r.apellidosCompletos && r.apellidosCompletos.includes(texto)) ||
+                (r.nombresCompletos && r.nombresCompletos.includes(texto))
+            );
+        }
+        paginaActual = 1;
+        renderizarTablaPaginada();
+    }
+
+    function limpiarBusqueda() {
+        document.getElementById("inputBusqueda").value = "";
+        listaFiltradaActual = null;
+        paginaActual = 1;
+        renderizarTablaPaginada();
+    }
+
+    function cambiarPagina(delta) {
+        paginaActual += delta;
+        if (paginaActual < 1) paginaActual = 1;
+        renderizarTablaPaginada();
+    }
+
+    function actualizarTabla() {
+        listaFiltradaActual = null;
+        paginaActual = 1;
+        renderizarTablaPaginada();
+    }
+
+    function renderizarTablaPaginada() {
+        const cuerpo = document.getElementById("tablaCuerpo");
+        if (!cuerpo) return;
+
+        const sourceList = listaFiltradaActual !== null ? listaFiltradaActual : registros.map((r, idx) => ({ ...r, idxOriginal: idx }));
+        const permitidos = sourceList.filter(r => !usuarioActivo || r.especialista === usuarioActivo);
+
+        document.getElementById("badgeContador").textContent = permitidos.length;
+
+        const totalPaginas = Math.ceil(permitidos.length / registrosPorPagina) || 1;
+        if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+
+        const inicio = (paginaActual - 1) * registrosPorPagina;
+        const fin = inicio + registrosPorPagina;
+        const paginaDatos = permitidos.slice(inicio, fin);
+
+        document.getElementById("infoPaginacion").textContent = `Mostrando página ${paginaActual} de ${totalPaginas} (Total: ${permitidos.length} registros)`;
+        document.getElementById("btnPagPrev").disabled = paginaActual === 1;
+        document.getElementById("btnPagNext").disabled = paginaActual >= totalPaginas;
+
+        if (paginaDatos.length === 0) {
+            cuerpo.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400">No se encontraron registros en el sistema.</td></tr>`;
+            return;
+        }
+
+        let html = "";
+        paginaDatos.forEach(r => {
+            const idx = r.idxOriginal !== undefined ? r.idxOriginal : registros.indexOf(r);
+            html += `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 font-mono font-bold text-purple-700">${r.codigo || '-'}</td>
+                    <td class="p-3">
+                        <div class="font-semibold text-slate-800">${r.especialista || '-'}</div>
+                        <div class="text-[10px] text-slate-500">TURNO: ${r.turnoAsignacion || '-'}</div>
+                    </td>
+                    <td class="p-3 font-mono">${r.numExpediente || '-'}</td>
+                    <td class="p-3 font-mono">${r.numHojaTramite || '-'}</td>
+                    <td class="p-3 font-medium text-slate-900">${r.apellidosCompletos || ''} ${r.nombresCompletos || ''}</td>
+                    <td class="p-3 font-mono">${r.dni || '-'}</td>
+                    <td class="p-3">${r.tipoAtencion || '-'}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-[10px] font-bold">${r.estadoPsicologico || '-'}</span>
+                    </td>
+                    <td class="p-3 text-center">
+                        <div class="flex items-center justify-center gap-1.5">
+                            <button onclick="verDetalleRegistro(${idx})" title="Ver Detalle" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition"><i class="fa-solid fa-eye"></i></button>
+                            <button onclick="editarRegistro(${idx})" title="Editar" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded transition"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="borrarRegistro(${idx})" title="Eliminar" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded transition"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        cuerpo.innerHTML = html;
+    }
+
+    function actualizarDashboard() {
+        const permitidos = obtenerRegistrosPermitidos();
+        const total = permitidos.length;
+        const emitidos = permitidos.filter(r => r.estadoPsicologico && r.estadoPsicologico.includes("INFORME PSICOLÓGICO EMITIDO")).length;
+        const enProceso = permitidos.filter(r => r.estadoPsicologico && r.estadoPsicologico.includes("EN EVALUACIÓN PSICOLÓGICA")).length;
+        const eficacia = total > 0 ? Math.round((emitidos / total) * 100) : 0;
+
+        document.getElementById("kpiTotal").textContent = total;
+        document.getElementById("kpiAtendidos").textContent = emitidos;
+        document.getElementById("kpiProceso").textContent = enProceso;
+        document.getElementById("kpiEficacia").textContent = eficacia + "%";
+
+        const conteoEsp = {};
+        permitidos.forEach(r => {
+            const esp = r.especialista || 'SIN ESPECIFICAR';
+            conteoEsp[esp] = (conteoEsp[esp] || 0) + 1;
+        });
+
+        const ctxEsp = document.getElementById('chartEspecialista').getContext('2d');
+        if (chartEsp) chartEsp.destroy();
+        chartEsp = new Chart(ctxEsp, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(conteoEsp),
+                datasets: [{
+                    label: 'Expedientes',
+                    data: Object.values(conteoEsp),
+                    backgroundColor: '#7c3aed',
+                    borderRadius: 6
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+
+        const conteoTip = {};
+        permitidos.forEach(r => {
+            const tip = r.tipoAtencion || 'OTRO';
+            conteoTip[tip] = (conteoTip[tip] || 0) + 1;
+        });
+
+        const ctxTip = document.getElementById('chartTipo').getContext('2d');
+        if (chartTip) chartTip.destroy();
+        chartTip = new Chart(ctxTip, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(conteoTip),
+                datasets: [{
+                    data: Object.values(conteoTip),
+                    backgroundColor: ['#7c3aed', '#a855f7', '#c084fc', '#e9d5ff', '#6366f1']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    async function exportarExcel() {
+        const permitidos = obtenerRegistrosPermitidos();
+        if (permitidos.length === 0) {
+            alert("No hay registros para exportar.");
+            return;
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Expedientes Psicología');
+
+        sheet.columns = [
+            { header: 'CÓDIGO', key: 'codigo', width: 12 },
+            { header: 'TURNO', key: 'turnoAsignacion', width: 12 },
+            { header: 'ESPECIALISTA', key: 'especialista', width: 25 },
+            { header: 'FECHA REGISTRO', key: 'fechaRegistro', width: 15 },
+            { header: 'FECHA EVALUACIÓN', key: 'fechaEvaluacion', width: 18 },
+            { header: 'N° HOJA TRÁMITE', key: 'numHojaTramite', width: 18 },
+            { header: 'N° EXPEDIENTE', key: 'numExpediente', width: 18 },
+            { header: 'N° FOLIOS', key: 'numFolios', width: 10 },
+            { header: 'APELLIDOS', key: 'apellidosCompletos', width: 22 },
+            { header: 'NOMBRES', key: 'nombresCompletos', width: 22 },
+            { header: 'SEXO', key: 'sexo', width: 12 },
+            { header: 'DNI', key: 'dni', width: 12 },
+            { header: 'DISTRITO', key: 'distritoResidencia', width: 18 },
+            { header: 'ESTADO PSICOLÓGICO', key: 'estadoPsicologico', width: 30 },
+            { header: 'TIPO ATENCIÓN', key: 'tipoAtencion', width: 30 },
+            { header: 'OBSERVACIONES', key: 'observaciones', width: 40 }
+        ];
+
+        const headerRow = sheet.getRow(1);
+        headerRow.font = { bold: true, color: { argb: 'FFFFFF' } };
+        headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '1E3A8A' } };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        permitidos.forEach((r, index) => {
+            const row = sheet.addRow({
+                codigo: r.codigo,
+                turnoAsignacion: r.turnoAsignacion,
+                especialista: r.especialista,
+                fechaRegistro: formatearFecha(r.fechaRegistro),
+                fechaEvaluacion: formatearFecha(r.fechaEvaluacion),
+                numHojaTramite: r.numHojaTramite,
+                numExpediente: r.numExpediente,
+                numFolios: r.numFolios,
+                apellidosCompletos: r.apellidosCompletos,
+                nombresCompletos: r.nombresCompletos,
+                sexo: r.sexo,
+                dni: r.dni,
+                distritoResidencia: r.distritoResidencia,
+                estadoPsicologico: r.estadoPsicologico,
+                tipoAtencion: r.tipoAtencion,
+                observaciones: r.observaciones
+            });
+
+            const isEven = index % 2 === 0;
+            row.eachCell({ includeEmpty: true }, cell => {
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'D1D5DB' } },
+                    left: { style: 'thin', color: { argb: 'D1D5DB' } },
+                    bottom: { style: 'thin', color: { argb: 'D1D5DB' } },
+                    right: { style: 'thin', color: { argb: 'D1D5DB' } }
+                };
+                if (!isEven) {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F9FAFB' } };
+                }
+            });
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Expedientes_Psicologia_${new Date().toISOString().split('T')[0]}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+
+    function limpiarFormulario() {
+        document.getElementById('psicologiaForm').reset();
+        document.getElementById('editIndex').value = "-1";
+        const hoy = new Date().toISOString().split('T')[0];
+        if (document.getElementById('fechaRegistro')) document.getElementById('fechaRegistro').value = hoy;
+        if (document.getElementById('fechaEvaluacion')) document.getElementById('fechaEvaluacion').value = hoy;
+        if (usuarioActivo) {
+            const campoEsp = document.getElementById('especialista');
+            if (campoEsp) campoEsp.value = usuarioActivo;
+        }
+        const btnGuardar = document.getElementById('btnGuardarText');
+        if (btnGuardar) {
+            btnGuardar.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> REGISTRAR EXPEDIENTE`;
+        }
+    }
+</script>
+</body>
+</html>

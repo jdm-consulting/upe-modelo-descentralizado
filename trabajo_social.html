@@ -1,0 +1,885 @@
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; }
+    .tab-btn.active { border-bottom: 3px solid #059669; color: #059669; font-weight: 700; background-color: #ecfdf5; }
+    input, select, textarea { text-transform: uppercase; }
+    input::placeholder, textarea::placeholder { text-transform: none; }
+</style>
+
+<!-- MODAL DE ACCESO -->
+<div id="modalLogin" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-200">
+        <div class="text-center space-y-2">
+            <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-house-user"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800">MÓDULO DE TRABAJO SOCIAL</h2>
+            <p class="text-xs text-slate-500">Seleccione su perfil para ingresar al sistema.</p>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">USUARIO / PERFIL:*</label>
+                <select id="loginUsuario" class="w-full text-sm p-3 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium">
+                    <option value="">-- SELECCIONE PERFIL --</option>
+                    <option value="TRABAJADOR SOCIAL - EQUIPO 1">TRABAJADOR SOCIAL - EQUIPO 1</option>
+                    <option value="TRABAJADOR SOCIAL - EQUIPO 2">TRABAJADOR SOCIAL - EQUIPO 2</option>
+                    <option value="TRABAJADOR SOCIAL - EQUIPO 3">TRABAJADOR SOCIAL - EQUIPO 3</option>
+                    <option value="TRABAJADOR SOCIAL - EQUIPO 4">TRABAJADOR SOCIAL - EQUIPO 4</option>
+                    <option value="TRABAJADOR SOCIAL - EQUIPO 5">TRABAJADOR SOCIAL - EQUIPO 5</option>
+                    <option value="TRABAJADOR SOCIAL - EQUIPO 6">TRABAJADOR SOCIAL - EQUIPO 6</option>
+                </select>
+            </div>
+            <button onclick="iniciarSesion()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm transition shadow-lg flex items-center justify-center gap-2">
+                <i class="fa-solid fa-right-to-bracket"></i> INGRESAR AL SISTEMA
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL VISOR DETALLADO DE EXPEDIENTE -->
+<div id="modalVisor" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl max-w-2xl w-full p-6 space-y-4 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b pb-3">
+            <div class="flex items-center gap-2">
+                <div class="w-9 h-9 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-eye"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">DETALLE DEL EXPEDIENTE DE TRABAJO SOCIAL</h3>
+                    <p class="text-[11px] text-slate-500">Información completa registrada en el sistema</p>
+                </div>
+            </div>
+            <button onclick="cerrarVisor()" class="text-slate-400 hover:text-slate-600 text-lg font-bold px-2 py-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        
+        <div id="contenidoVisor" class="space-y-4 text-xs text-slate-700"></div>
+
+        <div class="flex justify-end pt-2 border-t">
+            <button onclick="cerrarVisor()" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-lg text-xs transition">CERRAR</button>
+        </div>
+    </div>
+</div>
+
+<!-- CONTENEDOR PRINCIPAL -->
+<div class="max-w-7xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden border border-slate-200">
+    <div class="bg-slate-900 text-white p-5 flex flex-col md:flex-row items-center justify-between border-b-4 border-emerald-600">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-house-user text-3xl text-emerald-400"></i>
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold tracking-wide">MÓDULO DE TRABAJO SOCIAL</h1>
+                <p class="text-xs text-slate-400">SISTEMA MULTIDISCIPLINARIO DE EXPEDIENTES</p>
+            </div>
+        </div>
+        <div class="mt-3 md:mt-0 flex items-center gap-3">
+            <span id="badgeRolActivo" class="px-3 py-1 bg-slate-800 text-emerald-300 text-xs rounded-full font-semibold border border-slate-700 flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-user"></i> SIN SESIÓN
+            </span>
+            <button onclick="cerrarSesion()" class="px-3 py-1 bg-rose-600/80 hover:bg-rose-600 text-white text-xs rounded-full transition flex items-center gap-1">
+                <i class="fa-solid fa-power-off"></i> SALIR
+            </button>
+        </div>
+    </div>
+
+    <div class="flex border-b border-slate-200 bg-slate-100 text-slate-600 text-sm font-semibold">
+        <button onclick="cambiarPestana('tab-formulario')" id="btn-tab-formulario" class="tab-btn active px-6 py-3.5 flex items-center gap-2 transition hover:text-emerald-600">
+            <i class="fa-solid fa-pen-to-square"></i> FORMULARIO DE REGISTRO
+        </button>
+        <button onclick="cambiarPestana('tab-registros')" id="btn-tab-registros" class="tab-btn px-6 py-3.5 flex items-center gap-2 transition hover:text-emerald-600">
+            <i class="fa-solid fa-table-list"></i> REGISTROS INGRESADOS
+            <span id="badgeContador" class="ml-1 px-2 py-0.5 text-xs bg-emerald-600 text-white rounded-full">0</span>
+        </button>
+        <button onclick="cambiarPestana('tab-dashboard')" id="btn-tab-dashboard" class="tab-btn px-6 py-3.5 flex items-center gap-2 transition hover:text-emerald-600">
+            <i class="fa-solid fa-chart-line"></i> DASHBOARD E INDICADORES
+        </button>
+    </div>
+
+    <div class="p-6">
+        <div id="tab-formulario" class="tab-content">
+            <form id="socialForm" onsubmit="return guardarRegistro(event)" class="space-y-6">
+                <input type="hidden" id="editIndex" value="-1">
+
+                <div class="space-y-3">
+                    <div class="inline-block bg-emerald-100 text-emerald-800 px-3 py-1 rounded-md text-xs font-bold tracking-wide border border-emerald-200">
+                        1. ASIGNACIÓN INSTITUCIONAL
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50/50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">TURNO DE ASIGNACIÓN *</label>
+                            <select id="turnoAsignacion" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                <option value="">SELECCIONE TURNO</option>
+                                <option value="MAÑANA">MAÑANA</option>
+                                <option value="TARDE">TARDE</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">TRABAJADOR SOCIAL / EQUIPO *</label>
+                            <select id="especialista" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                <option value="">SELECCIONE TRABAJADOR SOCIAL</option>
+                                <option value="TRABAJADOR SOCIAL - EQUIPO 1">TRABAJADOR SOCIAL - EQUIPO 1</option>
+                                <option value="TRABAJADOR SOCIAL - EQUIPO 2">TRABAJADOR SOCIAL - EQUIPO 2</option>
+                                <option value="TRABAJADOR SOCIAL - EQUIPO 3">TRABAJADOR SOCIAL - EQUIPO 3</option>
+                                <option value="TRABAJADOR SOCIAL - EQUIPO 4">TRABAJADOR SOCIAL - EQUIPO 4</option>
+                                <option value="TRABAJADOR SOCIAL - EQUIPO 5">TRABAJADOR SOCIAL - EQUIPO 5</option>
+                                <option value="TRABAJADOR SOCIAL - EQUIPO 6">TRABAJADOR SOCIAL - EQUIPO 6</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">FECHA DE REGISTRO *</label>
+                            <input type="date" id="fechaRegistro" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="inline-block bg-emerald-100 text-emerald-800 px-3 py-1 rounded-md text-xs font-bold tracking-wide border border-emerald-200">
+                        2. DATOS DEL TRÁMITE INSTITUCIONAL
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50/50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">FECHA DE EVALUACIÓN SOCIAL *</label>
+                            <input type="date" id="fechaEvaluacion" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">HOJA DE TRÁMITE (HT) *</label>
+                            <div class="flex gap-1">
+                                <input type="text" id="numHojaTramiteCorrelativo" placeholder="EJ: 123456" required class="w-3/5 text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                <select id="numHojaTramiteAnio" required class="w-2/5 text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500"></select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">N° DE EXPEDIENTE *</label>
+                            <div class="flex gap-1">
+                                <input type="text" id="numExpedienteCorrelativo" placeholder="EJ: 456789" required class="w-3/5 text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                <select id="numExpedienteAnio" required class="w-2/5 text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500"></select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">N° FOLIOS *</label>
+                            <input type="number" id="numFolios" min="1" placeholder="EJ: 25" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="inline-block bg-emerald-100 text-emerald-800 px-3 py-1 rounded-md text-xs font-bold tracking-wide border border-emerald-200">
+                        3. DATOS DE LA PERSONA / ADMINISTRADO
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50/50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">APELLIDOS COMPLETOS *</label>
+                            <input type="text" id="apellidosCompletos" required placeholder="GARCÍA LÓPEZ" class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">NOMBRES COMPLETOS *</label>
+                            <input type="text" id="nombresCompletos" required placeholder="MARÍA ELENA" class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">SEXO *</label>
+                            <select id="sexo" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                <option value="">SELECCIONE</option>
+                                <option value="MASCULINO">MASCULINO</option>
+                                <option value="FEMENINO">FEMENINO</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">DNI / DOCUMENTO (8 DÍGITOS) *</label>
+                            <input type="text" id="dni" maxlength="8" pattern="[0-9]{8}" required placeholder="99999999" class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">FECHA DE NACIMIENTO</label>
+                            <input type="date" id="fechaNacimiento" onchange="calcularEdad()" class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">EDAD (AUTOCÁLCULO)</label>
+                            <input type="number" id="edad" readonly placeholder="0" class="w-full text-sm p-2.5 bg-slate-100 border border-slate-300 rounded-lg text-slate-600 font-semibold">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">DISTRITO DE RESIDENCIA *</label>
+                            <select id="distritoResidencia" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                <option value="">SELECCIONE DISTRITO</option>
+                                <option value="CHORRILLOS">CHORRILLOS</option>
+                                <option value="LURÍN">LURÍN</option>
+                                <option value="PACHACAMAC">PACHACAMAC</option>
+                                <option value="PUCUSANA">PUCUSANA</option>
+                                <option value="SAN JUAN DE MIRAFLORES">SAN JUAN DE MIRAFLORES</option>
+                                <option value="VILLA EL SALVADOR">VILLA EL SALVADOR</option>
+                                <option value="VILLA MARÍA DEL TRIUNFO">VILLA MARÍA DEL TRIUNFO</option>
+                                <option value="OTRO">OTRO</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="inline-block bg-emerald-100 text-emerald-800 px-3 py-1 rounded-md text-xs font-bold tracking-wide border border-emerald-200">
+                        4. EVALUACIÓN SOCIOECONÓMICA Y ACCIONES
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">ESTADO / CLASIFICACIÓN SOCIAL *</label>
+                            <select id="estadoSocial" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                <option value="">SELECCIONE ESTADO</option>
+                                <option value="1. EN EVALUACIÓN SOCIOECONÓMICA">1. EN EVALUACIÓN SOCIOECONÓMICA</option>
+                                <option value="2. INFORME SOCIAL EMITIDO">2. INFORME SOCIAL EMITIDO</option>
+                                <option value="3. VISITA DOMICILIARIA REALIZADA">3. VISITA DOMICILIARIA REALIZADA</option>
+                                <option value="4. CONCLUIDO / CASO CERRADO">4. CONCLUIDO / CASO CERRADO</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">TIPO DE INTERVENCIÓN SOCIAL *</label>
+                            <select id="tipoIntervencion" required class="w-full text-sm p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                <option value="">SELECCIONE TIPO DE INTERVENCIÓN</option>
+                                <option value="EVALUACIÓN Y FICHA SOCIOECONÓMICA">EVALUACIÓN Y FICHA SOCIOECONÓMICA</option>
+                                <option value="VISITA DOMICILIARIA Y DE CAMPO">VISITA DOMICILIARIA Y DE CAMPO</option>
+                                <option value="GESTIÓN DE REDES DE SOPORTE / ASISTENCIA">GESTIÓN DE REDES DE SOPORTE / ASISTENCIA</option>
+                                <option value="ORIENTACIÓN Y TRÁMITE SOCIAL">ORIENTACIÓN Y TRÁMITE SOCIAL</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">CONCLUSIONES / DIAGNÓSTICO SOCIAL *</label>
+                            <textarea id="observaciones" rows="3" required placeholder="RESUMEN SOCIOECONÓMICO, CONDICIONES DE HABITABILIDAD, SITUACIÓN FAMILIAR Y RECOMENDACIONES SOCIALES..." class="w-full text-sm p-3 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="limpiarFormulario()" class="px-5 py-2.5 bg-slate-500 hover:bg-slate-600 text-white font-semibold rounded-lg text-sm transition">LIMPIAR</button>
+                    <button type="submit" id="btnGuardarText" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> REGISTRAR EXPEDIENTE
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div id="tab-registros" class="tab-content hidden space-y-4">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800">BANDEJA DE INTERVENCIONES SOCIALES</h2>
+                    <p class="text-xs text-slate-500">Fichas socioeconómicas e informes de campo registrados.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="sincronizarConFirebase()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm shadow transition flex items-center gap-2">
+                        <i class="fa-solid fa-rotate"></i> ACTUALIZAR DESDE LA NUBE
+                    </button>
+                    <button onclick="exportarExcel()" class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg text-sm shadow transition flex items-center gap-2">
+                        <i class="fa-solid fa-file-excel text-lg"></i> EXPORTAR A EXCEL (.XLSX)
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-emerald-50/50 p-3.5 rounded-lg border border-emerald-200/80 flex flex-col md:flex-row items-center justify-between gap-3">
+                <div class="w-full md:w-2/3 flex items-center gap-2">
+                    <input type="text" id="inputBusqueda" onkeyup="if(event.key==='Enter') ejecutarBusqueda()" placeholder="Buscar por Código, N° Expediente, Hoja de Trámite o DNI..." class="w-full px-3 py-2 bg-white text-xs border border-slate-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none uppercase">
+                    <button type="button" onclick="ejecutarBusqueda()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md text-xs transition">BUSCAR</button>
+                    <button type="button" onclick="limpiarBusqueda()" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-md text-xs transition">LIMPIAR</button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-lg border border-slate-200">
+                <table class="w-full text-xs text-left text-slate-700">
+                    <thead class="text-xs text-white uppercase bg-slate-800">
+                        <tr>
+                            <th class="p-3">Código</th>
+                            <th class="p-3">Turno / Trab. Social</th>
+                            <th class="p-3">N° Expediente</th>
+                            <th class="p-3">Hoja Trámite (HT)</th>
+                            <th class="p-3">Administrado</th>
+                            <th class="p-3">DNI</th>
+                            <th class="p-3">Intervención</th>
+                            <th class="p-3">Estado Social</th>
+                            <th class="p-3 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaCuerpo" class="divide-y divide-slate-200 bg-white"></tbody>
+                </table>
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+                <span id="infoPaginacion" class="text-xs text-slate-500">Mostrando página 1</span>
+                <div class="flex gap-2">
+                    <button onclick="cambiarPagina(-1)" id="btnPagPrev" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded text-xs transition">ANTERIOR</button>
+                    <button onclick="cambiarPagina(1)" id="btnPagNext" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded text-xs transition">SIGUIENTE</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-dashboard" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex items-center gap-4">
+                    <div class="p-3 bg-emerald-600 text-white rounded-lg text-xl"><i class="fa-solid fa-folder-open"></i></div>
+                    <div>
+                        <p class="text-xs font-semibold text-emerald-700 uppercase">Total Expedientes</p>
+                        <h3 id="kpiTotal" class="text-2xl font-black text-emerald-900">0</h3>
+                    </div>
+                </div>
+                <div class="bg-teal-50 border border-teal-200 p-4 rounded-xl flex items-center gap-4">
+                    <div class="p-3 bg-teal-600 text-white rounded-lg text-xl"><i class="fa-solid fa-clipboard-check"></i></div>
+                    <div>
+                        <p class="text-xs font-semibold text-teal-700 uppercase">Informes Emitidos</p>
+                        <h3 id="kpiAtendidos" class="text-2xl font-black text-teal-900">0</h3>
+                    </div>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-center gap-4">
+                    <div class="p-3 bg-amber-600 text-white rounded-lg text-xl"><i class="fa-solid fa-hourglass-half"></i></div>
+                    <div>
+                        <p class="text-xs font-semibold text-amber-700 uppercase">En Evaluación</p>
+                        <h3 id="kpiProceso" class="text-2xl font-black text-amber-900">0</h3>
+                    </div>
+                </div>
+                <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-xl flex items-center gap-4">
+                    <div class="p-3 bg-indigo-600 text-white rounded-lg text-xl"><i class="fa-solid fa-chart-pie"></i></div>
+                    <div>
+                        <p class="text-xs font-semibold text-indigo-700 uppercase">% Cobertura</p>
+                        <h3 id="kpiEficacia" class="text-2xl font-black text-indigo-900">0%</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                <div class="bg-white p-5 border border-slate-200 rounded-xl shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-800 mb-4">Expedientes por Equipo de Trabajo Social</h3>
+                    <div class="relative w-full h-[260px]">
+                        <canvas id="chartEspecialista"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-5 border border-slate-200 rounded-xl shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-800 mb-4">Tipos de Intervención Social</h3>
+                    <div class="relative w-full h-[260px]">
+                        <canvas id="chartTipo"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const FIREBASE_DB_URL = "https://upe-control-multidisciplinario-default-rtdb.firebaseio.com";
+    let usuarioActivo = null;
+
+    let registros = JSON.parse(localStorage.getItem('expedientes_social_db')) || [];
+    let chartEsp = null, chartTip = null;
+    let paginaActual = 1;
+    const registrosPorPagina = 10;
+    let listaFiltradaActual = null;
+    let datosOriginalesEdicion = null;
+
+    function formatearFecha(fechaStr) {
+        if (!fechaStr) return '-';
+        const partes = fechaStr.split('-');
+        if (partes.length === 3 && partes[0].length === 4) {
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+        return fechaStr;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const hoy = new Date().toISOString().split('T')[0];
+        if (document.getElementById('fechaRegistro')) document.getElementById('fechaRegistro').value = hoy;
+        if (document.getElementById('fechaEvaluacion')) document.getElementById('fechaEvaluacion').value = hoy;
+        
+        const anioActual = new Date().getFullYear();
+        const selectsAnio = ['numHojaTramiteAnio', 'numExpedienteAnio'];
+        
+        selectsAnio.forEach(id => {
+            const sel = document.getElementById(id);
+            if (sel) {
+                sel.innerHTML = '<option value="">AÑO</option>';
+                for (let anio = 2000; anio <= 2035; anio++) {
+                    let option = document.createElement('option');
+                    option.value = anio;
+                    option.textContent = anio;
+                    if (anio === anioActual) option.selected = true;
+                    sel.appendChild(option);
+                }
+            }
+        });
+
+        document.querySelectorAll('input[type="text"], textarea').forEach(el => {
+            el.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+            });
+        });
+
+        sincronizarConFirebase(true);
+    });
+
+    async function sincronizarConFirebase(silencioso = false) {
+        try {
+            const response = await fetch(`${FIREBASE_DB_URL}/social.json`);
+            const data = await response.json();
+            
+            if (data) {
+                registros = Object.values(data);
+                localStorage.setItem('expedientes_social_db', JSON.stringify(registros));
+            } else {
+                registros = JSON.parse(localStorage.getItem('expedientes_social_db')) || [];
+            }
+
+            if (!silencioso) alert("✅ Sincronización exitosa desde Firebase.");
+            if (usuarioActivo) actualizarTabla();
+        } catch (err) {
+            console.error("Error al conectar con Firebase:", err);
+            registros = JSON.parse(localStorage.getItem('expedientes_social_db')) || [];
+            if (!silencioso) alert("⚠️ Error de conexión con la nube, mostrando datos locales.");
+        }
+    }
+
+    function calcularEdad() {
+        const fechaNac = document.getElementById('fechaNacimiento').value;
+        if (!fechaNac) return;
+        const hoy = new Date();
+        const cumpleanos = new Date(fechaNac);
+        let edad = hoy.getFullYear() - cumpleanos.getFullYear();
+        const m = hoy.getMonth() - cumpleanos.getMonth();
+        if (m < 0 || (m === 0 && hoy.getDate() < cumpleanos.getDate())) edad--;
+        document.getElementById('edad').value = edad >= 0 ? edad : 0;
+    }
+
+    function iniciarSesion() {
+        const usr = document.getElementById("loginUsuario").value;
+        if (!usr) return alert("Seleccione su perfil para ingresar.");
+        usuarioActivo = usr;
+        
+        document.getElementById("badgeRolActivo").innerHTML = `<i class="fa-solid fa-user-check"></i> ${usr}`;
+        document.getElementById("especialista").value = usr;
+        document.getElementById("especialista").disabled = true;
+
+        document.getElementById("modalLogin").classList.add("hidden");
+        actualizarTabla();
+    }
+
+    function cerrarSesion() {
+        usuarioActivo = null;
+        document.getElementById("modalLogin").classList.remove("hidden");
+    }
+
+    function cambiarPestana(tabId) {
+        document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
+        document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+        document.getElementById(tabId).classList.remove("hidden");
+        document.getElementById("btn-" + tabId).classList.add("active");
+
+        if (tabId === 'tab-registros') actualizarTabla();
+        if (tabId === 'tab-dashboard') actualizarDashboard();
+    }
+
+    function obtenerRegistrosPermitidos() {
+        return registros.filter(r => r.especialista === usuarioActivo);
+    }
+
+    async function guardarRegistro(e) {
+        if (e) e.preventDefault();
+        const btn = document.getElementById('btnGuardarText');
+        if (btn) btn.disabled = true;
+
+        const editIndex = parseInt(document.getElementById("editIndex").value);
+
+        let codigoGenerado;
+        if (editIndex >= 0 && registros[editIndex].codigo) {
+            codigoGenerado = registros[editIndex].codigo;
+        } else {
+            const maxNum = registros.length > 0 ? Math.max(...registros.map(r => {
+                let codStr = String(r.codigo || 'SOC-0');
+                return parseInt(codStr.replace('SOC-', '')) || 0;
+            })) : 0;
+            codigoGenerado = 'SOC-' + String(maxNum + 1).padStart(4, '0');
+        }
+
+        const htCorr = document.getElementById("numHojaTramiteCorrelativo").value.trim();
+        const htAnio = document.getElementById("numHojaTramiteAnio").value;
+        const expCorr = document.getElementById("numExpedienteCorrelativo").value.trim();
+        const expAnio = document.getElementById("numExpedienteAnio").value;
+
+        const reg = {
+            codigo: codigoGenerado,
+            modulo: "TRABAJO SOCIAL",
+            turnoAsignacion: document.getElementById("turnoAsignacion").value,
+            especialista: document.getElementById("especialista").value,
+            fechaRegistro: document.getElementById("fechaRegistro").value,
+            fechaEvaluacion: document.getElementById("fechaEvaluacion").value,
+            numHojaTramite: htCorr + "-" + htAnio,
+            numExpediente: expCorr + "-" + expAnio,
+            numFolios: parseInt(document.getElementById("numFolios").value) || 0,
+            apellidosCompletos: document.getElementById("apellidosCompletos").value.toUpperCase(),
+            nombresCompletos: document.getElementById("nombresCompletos").value.toUpperCase(),
+            sexo: document.getElementById("sexo").value,
+            dni: document.getElementById("dni").value,
+            fechaNacimiento: document.getElementById("fechaNacimiento").value,
+            edad: parseInt(document.getElementById("edad").value) || 0,
+            distritoResidencia: document.getElementById("distritoResidencia").value,
+            estadoSocial: document.getElementById("estadoSocial").value,
+            tipoIntervencion: document.getElementById("tipoIntervencion").value,
+            observaciones: document.getElementById("observaciones").value.toUpperCase()
+        };
+
+        if (editIndex >= 0) {
+            registros[editIndex] = reg;
+        } else {
+            registros.unshift(reg);
+        }
+
+        localStorage.setItem('expedientes_social_db', JSON.stringify(registros));
+
+        try {
+            await fetch(`${FIREBASE_DB_URL}/social/${codigoGenerado}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reg)
+            });
+            console.log("✅ Expediente social guardado en Firebase.");
+        } catch (err) {
+            console.error("❌ Error al guardar en Firebase:", err);
+        }
+
+        alert(editIndex >= 0 ? "✅ Expediente social actualizado correctamente." : "✅ Expediente social registrado con éxito. Código asignado: " + codigoGenerado);
+
+        limpiarFormulario();
+        if (btn) btn.disabled = false;
+        cambiarPestana('tab-registros');
+        return false;
+    }
+
+    function verDetalleRegistro(indexEnBase) {
+        const r = registros[indexEnBase];
+        if (!r) return;
+
+        const html = `
+            <div class="space-y-3">
+                <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+                    <span class="font-bold text-emerald-900 block mb-1">INFORMACIÓN GENERAL DEL REGISTRO</span>
+                    <div class="grid grid-cols-2 gap-2 text-slate-700">
+                        <div><strong>Código Único:</strong> <span class="font-mono text-emerald-700 font-bold">${r.codigo || '-'}</span></div>
+                        <div><strong>Turno:</strong> ${r.turnoAsignacion || '-'}</div>
+                        <div><strong>Trabajador Social:</strong> ${r.especialista || '-'}</div>
+                        <div><strong>Fecha de Registro:</strong> ${formatearFecha(r.fechaRegistro)}</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <span class="font-bold text-slate-800 block mb-1">2. DATOS DEL TRÁMITE INSTITUCIONAL</span>
+                    <div class="grid grid-cols-2 gap-2 text-slate-700">
+                        <div><strong>Fecha de Evaluación Social:</strong> ${formatearFecha(r.fechaEvaluacion)}</div>
+                        <div><strong>N° Hoja de Trámite (HT):</strong> <span class="font-mono text-emerald-700">${r.numHojaTramite || '-'}</span></div>
+                        <div><strong>N° de Expediente:</strong> <span class="font-mono text-emerald-700 font-bold">${r.numExpediente || '-'}</span></div>
+                        <div><strong>N° de Folios:</strong> ${r.numFolios || '-'}</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <span class="font-bold text-slate-800 block mb-1">3. DATOS DE LA PERSONA / ADMINISTRADO</span>
+                    <div class="grid grid-cols-2 gap-2 text-slate-700">
+                        <div><strong>Apellidos y Nombres:</strong> ${r.apellidosCompletos}, ${r.nombresCompletos}</div>
+                        <div><strong>DNI:</strong> ${r.dni || '-'}</div>
+                        <div><strong>Sexo:</strong> ${r.sexo || '-'}</div>
+                        <div><strong>Fecha Nacimiento / Edad:</strong> ${formatearFecha(r.fechaNacimiento)} (${r.edad || 0} años)</div>
+                        <div class="col-span-2"><strong>Distrito de Residencia:</strong> ${r.distritoResidencia || '-'}</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <span class="font-bold text-slate-800 block mb-1">4. EVALUACIÓN SOCIOECONÓMICA Y ACCIONES</span>
+                    <div class="grid grid-cols-1 gap-2 text-slate-700">
+                        <div><strong>Estado Social:</strong> <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">${r.estadoSocial || '-'}</span></div>
+                        <div><strong>Tipo de Intervención:</strong> <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">${r.tipoIntervencion || '-'}</span></div>
+                        <div><strong>Conclusiones / Diagnóstico:</strong><br><p class="mt-1 p-2 bg-white rounded border border-slate-200 font-mono text-[11px] whitespace-pre-wrap">${r.observaciones || 'SIN OBSERVACIONES'}</p></div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById("contenidoVisor").innerHTML = html;
+        document.getElementById("modalVisor").classList.remove("hidden");
+        document.getElementById("modalVisor").classList.add("flex");
+    }
+
+    function cerrarVisor() {
+        document.getElementById("modalVisor").classList.add("hidden");
+        document.getElementById("modalVisor").classList.remove("flex");
+    }
+
+    function editarRegistro(indexEnBase) {
+        const r = registros[indexEnBase];
+        if (!r) return;
+
+        document.getElementById("editIndex").value = indexEnBase;
+        document.getElementById("turnoAsignacion").value = r.turnoAsignacion;
+        document.getElementById("especialista").value = r.especialista;
+        document.getElementById("fechaRegistro").value = r.fechaRegistro;
+        document.getElementById("fechaEvaluacion").value = r.fechaEvaluacion;
+        
+        const partesHT = (r.numHojaTramite || "").split("-");
+        document.getElementById("numHojaTramiteCorrelativo").value = partesHT[0] || "";
+        if (partesHT[1]) document.getElementById("numHojaTramiteAnio").value = partesHT[1];
+
+        const partesExp = (r.numExpediente || "").split("-");
+        document.getElementById("numExpedienteCorrelativo").value = partesExp[0] || "";
+        if (partesExp[1]) document.getElementById("numExpedienteAnio").value = partesExp[1];
+
+        document.getElementById("numFolios").value = r.numFolios;
+        document.getElementById("apellidosCompletos").value = r.apellidosCompletos;
+        document.getElementById("nombresCompletos").value = r.nombresCompletos;
+        document.getElementById("sexo").value = r.sexo;
+        document.getElementById("dni").value = r.dni;
+        document.getElementById("fechaNacimiento").value = r.fechaNacimiento;
+        document.getElementById("edad").value = r.edad;
+        document.getElementById("distritoResidencia").value = r.distritoResidencia;
+        document.getElementById("estadoSocial").value = r.estadoSocial;
+        document.getElementById("tipoIntervencion").value = r.tipoIntervencion;
+        document.getElementById("observaciones").value = r.observaciones;
+
+        datosOriginalesEdicion = JSON.parse(JSON.stringify(r));
+
+        document.getElementById("btnGuardarText").innerHTML = `<i class="fa-solid fa-pen-to-square"></i> ACTUALIZAR EXPEDIENTE`;
+        cambiarPestana('tab-formulario');
+    }
+
+    async function borrarRegistro(indexEnBase) {
+        const r = registros[indexEnBase];
+        if (!r) return;
+
+        if (confirm("¿Está seguro de que desea eliminar este registro? Esta acción no se puede deshacer.")) {
+            try {
+                if (r.codigo) {
+                    await fetch(`${FIREBASE_DB_URL}/social/${r.codigo}.json`, { method: 'DELETE' });
+                }
+            } catch (err) {
+                console.error("Error eliminando de Firebase:", err);
+            }
+
+            registros.splice(indexEnBase, 1);
+            localStorage.setItem('expedientes_social_db', JSON.stringify(registros));
+            actualizarTabla();
+            alert("🗑 Registro eliminado correctamente.");
+        }
+    }
+
+    function actualizarTabla(lista = null) {
+        const permitidos = lista !== null ? lista : obtenerRegistrosPermitidos();
+        listaFiltradaActual = permitidos;
+        document.getElementById("badgeContador").innerText = permitidos.length;
+
+        const totalPaginas = Math.ceil(permitidos.length / registrosPorPagina) || 1;
+        if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+
+        const inicio = (paginaActual - 1) * registrosPorPagina;
+        const fin = inicio + registrosPorPagina;
+        const paginaRegistros = permitidos.slice(inicio, fin);
+
+        const tbody = document.getElementById("tablaCuerpo");
+        tbody.innerHTML = "";
+
+        if (permitidos.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400">No hay expedientes de trabajo social registrados para su usuario.</td></tr>`;
+            document.getElementById("infoPaginacion").innerText = "Mostrando 0 registros";
+            return;
+        }
+
+        paginaRegistros.forEach((r) => {
+            const indexReal = registros.indexOf(r);
+            tbody.innerHTML += `
+                <tr class="border-b hover:bg-slate-50">
+                    <td class="p-3 font-mono font-bold text-emerald-700">${r.codigo || '-'}</td>
+                    <td class="p-3">
+                        <span class="font-semibold text-slate-800">${r.especialista}</span><br>
+                        <span class="text-[10px] text-slate-500">TURNO: ${r.turnoAsignacion}</span>
+                    </td>
+                    <td class="p-3 font-mono font-bold text-slate-800">${r.numExpediente}</td>
+                    <td class="p-3 font-mono text-slate-600">${r.numHojaTramite}</td>
+                    <td class="p-3 font-medium">${r.apellidosCompletos}, ${r.nombresCompletos}</td>
+                    <td class="p-3">${r.dni}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">${r.tipoIntervencion}</span></td>
+                    <td class="p-3 text-[11px]">${r.estadoSocial}</td>
+                    <td class="p-3 text-center flex justify-center gap-1">
+                        <button onclick="verDetalleRegistro(${indexReal})" class="p-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded transition" title="Ver Detalle Completo"><i class="fa-solid fa-eye"></i></button>
+                        <button onclick="editarRegistro(${indexReal})" class="p-1.5 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded transition" title="Editar Expediente"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="borrarRegistro(${indexReal})" class="p-1.5 bg-rose-100 text-rose-700 hover:bg-rose-200 rounded transition" title="Eliminar Registro"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        document.getElementById("infoPaginacion").innerText = `Página ${paginaActual} de ${totalPaginas} (${permitidos.length} registros)`;
+        document.getElementById("btnPagPrev").disabled = paginaActual === 1;
+        document.getElementById("btnPagNext").disabled = paginaActual === totalPaginas;
+    }
+
+    function cambiarPagina(delta) {
+        paginaActual += delta;
+        actualizarTabla(listaFiltradaActual);
+    }
+
+    function ejecutarBusqueda() {
+        const txt = document.getElementById("inputBusqueda").value.toLowerCase();
+        const filtrados = obtenerRegistrosPermitidos().filter(r => 
+            (r.codigo && r.codigo.toLowerCase().includes(txt)) || 
+            r.numExpediente.toLowerCase().includes(txt) || 
+            r.numHojaTramite.toLowerCase().includes(txt) || 
+            r.dni.includes(txt) || 
+            r.apellidosCompletos.toLowerCase().includes(txt)
+        );
+        paginaActual = 1;
+        actualizarTabla(filtrados);
+    }
+
+    function limpiarBusqueda() {
+        document.getElementById("inputBusqueda").value = "";
+        paginaActual = 1;
+        actualizarTabla();
+    }
+
+    function limpiarFormulario() {
+        document.getElementById("socialForm").reset();
+        document.getElementById("editIndex").value = "-1";
+        datosOriginalesEdicion = null;
+        document.getElementById("btnGuardarText").innerHTML = `<i class="fa-solid fa-floppy-disk"></i> REGISTRAR EXPEDIENTE`;
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('fechaRegistro').value = hoy;
+        document.getElementById('fechaEvaluacion').value = hoy;
+        document.getElementById('numHojaTramiteAnio').value = new Date().getFullYear();
+        document.getElementById('numExpedienteAnio').value = new Date().getFullYear();
+        document.getElementById("especialista").value = usuarioActivo;
+    }
+
+    function actualizarDashboard() {
+        const data = obtenerRegistrosPermitidos();
+        const total = data.length;
+        const concluidos = data.filter(r => r.estadoSocial && r.estadoSocial.includes("2.")).length;
+        const enProceso = data.filter(r => r.estadoSocial && r.estadoSocial.includes("1.")).length;
+
+        document.getElementById("kpiTotal").innerText = total;
+        document.getElementById("kpiAtendidos").innerText = concluidos;
+        document.getElementById("kpiProceso").innerText = enProceso;
+        document.getElementById("kpiEficacia").innerText = total > 0 ? ((concluidos/total)*100).toFixed(1) + "%" : "0%";
+
+        const equipos = ['TRABAJADOR SOCIAL - EQUIPO 1', 'TRABAJADOR SOCIAL - EQUIPO 2', 'TRABAJADOR SOCIAL - EQUIPO 3', 'TRABAJADOR SOCIAL - EQUIPO 4', 'TRABAJADOR SOCIAL - EQUIPO 5', 'TRABAJADOR SOCIAL - EQUIPO 6'];
+        const conteoEq = equipos.map(eq => data.filter(r => r.especialista === eq).length);
+
+        if (chartEsp) chartEsp.destroy();
+        chartEsp = new Chart(document.getElementById('chartEspecialista'), {
+            type: 'bar',
+            data: { labels: ['EQ 1', 'EQ 2', 'EQ 3', 'EQ 4', 'EQ 5', 'EQ 6'], datasets: [{ label: 'Expedientes por Trab. Social', data: conteoEq, backgroundColor: '#059669' }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        const tipos = ['EVALUACIÓN Y FICHA SOCIOECONÓMICA', 'VISITA DOMICILIARIA Y DE CAMPO', 'GESTIÓN DE REDES DE SOPORTE / ASISTENCIA', 'ORIENTACIÓN Y TRÁMITE SOCIAL'];
+        const conteoTip = tipos.map(t => data.filter(r => r.tipoIntervencion === t).length);
+
+        if (chartTip) chartTip.destroy();
+        chartTip = new Chart(document.getElementById('chartTipo'), {
+            type: 'doughnut',
+            data: { labels: ['EVALUACIÓN', 'VISITA', 'GESTIÓN', 'ORIENTACIÓN'], datasets: [{ data: conteoTip, backgroundColor: ['#059669', '#10b981', '#34d399', '#a7f3d0'] }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    async function exportarExcel() {
+        const data = obtenerRegistrosPermitidos();
+        if (data.length === 0) return alert("No hay datos para exportar.");
+
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = "Sistema Multidisciplinario";
+        workbook.created = new Date();
+        const sheet = workbook.addWorksheet("Reporte Trabajo Social");
+
+        sheet.views = [{ showGridLines: true }];
+
+        sheet.columns = [
+            { header: 'CÓDIGO', key: 'codigo', width: 14 },
+            { header: 'TURNO DE ASIGNACIÓN', key: 'turnoAsignacion', width: 20 },
+            { header: 'TRABAJADOR SOCIAL / EQUIPO', key: 'especialista', width: 25 },
+            { header: 'FECHA DE REGISTRO', key: 'fechaRegistro', width: 18 },
+            { header: 'FECHA DE EVALUACIÓN SOCIAL', key: 'fechaEvaluacion', width: 25 },
+            { header: 'HOJA DE TRÁMITE (HT)', key: 'numHojaTramite', width: 22 },
+            { header: 'N° DE EXPEDIENTE', key: 'numExpediente', width: 20 },
+            { header: 'N° FOLIOS', key: 'numFolios', width: 12 },
+            { header: 'APELLIDOS COMPLETOS', key: 'apellidosCompletos', width: 25 },
+            { header: 'NOMBRES COMPLETOS', key: 'nombresCompletos', width: 25 },
+            { header: 'SEXO', key: 'sexo', width: 15 },
+            { header: 'DNI / DOCUMENTO', key: 'dni', width: 16 },
+            { header: 'FECHA DE NACIMIENTO', key: 'fechaNacimiento', width: 20 },
+            { header: 'EDAD', key: 'edad', width: 10 },
+            { header: 'DISTRITO DE RESIDENCIA', key: 'distritoResidencia', width: 22 },
+            { header: 'ESTADO SOCIAL', key: 'estadoSocial', width: 32 },
+            { header: 'TIPO DE INTERVENCIÓN', key: 'tipoIntervencion', width: 32 },
+            { header: 'CONCLUSIONES / DIAGNÓSTICO', key: 'observaciones', width: 45 }
+        ];
+
+        const headerRow = sheet.getRow(1);
+        headerRow.height = 28;
+        headerRow.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF065F46' } };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+
+        headerRow.eachCell((cell) => {
+            cell.border = {
+                top: { style: 'medium', color: { argb: 'FF111827' } },
+                left: { style: 'medium', color: { argb: 'FF111827' } },
+                bottom: { style: 'medium', color: { argb: 'FF111827' } },
+                right: { style: 'medium', color: { argb: 'FF111827' } }
+            };
+        });
+
+        data.forEach((r, index) => {
+            const codigoVal = r.codigo || ('SOC-' + String(index + 1).padStart(4, '0'));
+
+            const rowData = {
+                codigo: codigoVal,
+                turnoAsignacion: r.turnoAsignacion || '',
+                especialista: r.especialista || '',
+                fechaRegistro: formatearFecha(r.fechaRegistro),
+                fechaEvaluacion: formatearFecha(r.fechaEvaluacion),
+                numHojaTramite: r.numHojaTramite || '',
+                numExpediente: r.numExpediente || '',
+                numFolios: r.numFolios || 0,
+                apellidosCompletos: r.apellidosCompletos || '',
+                nombresCompletos: r.nombresCompletos || '',
+                sexo: r.sexo || '',
+                dni: r.dni || '',
+                fechaNacimiento: formatearFecha(r.fechaNacimiento),
+                edad: r.edad || 0,
+                distritoResidencia: r.distritoResidencia || '',
+                estadoSocial: r.estadoSocial || '',
+                tipoIntervencion: r.tipoIntervencion || '',
+                observaciones: r.observaciones || ''
+            };
+
+            const row = sheet.addRow(rowData);
+            const isEven = index % 2 === 0;
+            const fillColor = isEven ? 'FFFFFFFF' : 'FFF3F4F6';
+
+            row.font = { name: 'Segoe UI', size: 10 };
+            row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillColor } };
+
+            row.eachCell((cell, colNumber) => {
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+                    left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+                    bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+                    right: { style: 'thin', color: { argb: 'FFD1D5DB' } }
+                };
+
+                const key = sheet.getColumn(colNumber).key;
+                if (['codigo', 'turnoAsignacion', 'fechaRegistro', 'fechaEvaluacion', 'numHojaTramite', 'numExpediente', 'numFolios', 'dni', 'sexo', 'fechaNacimiento', 'edad'].includes(key)) {
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                } else if (['observaciones', 'estadoSocial', 'tipoIntervencion', 'apellidosCompletos', 'nombresCompletos', 'especialista', 'distritoResidencia'].includes(key)) {
+                    cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+                } else {
+                    cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                }
+            });
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Reporte_Trabajo_Social_Profesional.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+</script>
