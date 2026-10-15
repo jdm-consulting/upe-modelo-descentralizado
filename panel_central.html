@@ -71,7 +71,7 @@
                         <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         </span>
-                        <input type="text" id="input-criterio" placeholder="MORON, ROJAS, 654321..." class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-600 focus:bg-white focus:outline-none transition uppercase" onkeypress="if(event.key==='Enter') window.realizarBusquedaTrazabilidad()">
+                        <input type="text" id="input-criterio" placeholder="MORON, FIDELINA, 654321..." class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-600 focus:bg-white focus:outline-none transition uppercase" onkeypress="if(event.key==='Enter') window.realizarBusquedaTrazabilidad()">
                     </div>
                     <button onclick="window.realizarBusquedaTrazabilidad()" class="bg-[#00794c] hover:bg-[#00603c] text-white px-6 py-3 rounded-xl font-semibold text-sm shadow transition flex items-center justify-center space-x-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
@@ -287,6 +287,12 @@
         let chartEspecialidadInstance = null;
         let chartEquiposInstance = null;
 
+        // NUEVA FUNCIÓN PARA IGNORAR TILDES AL BUSCAR
+        function normalizarTexto(texto) {
+            if (!texto) return "";
+            return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             window.cargarDatosCentrales();
         });
@@ -336,7 +342,7 @@
                 secTra.classList.add('hidden');
                 window.actualizarDashboardGraficos();
             }
-        }
+        };
 
         function obtenerValorCamp(obj, ...claves) {
             if (!obj) return "";
@@ -357,11 +363,9 @@
             lblEstado.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-amber-400 rounded-full animate-pulse"></span> Consolidando Nodos...`;
 
             try {
-                const [snapLegal, snapPsico, snapSocial] = await Promise.all([
-                    firebase.database().ref('legal').once('value'),
-                    firebase.database().ref('psicologia').once('value'),
-                    firebase.database().ref('social').once('value')
-                ]);
+                const snapLegal = await firebase.database().ref('legal').once('value').catch(() => ({ val: () => ({}) }));
+                const snapPsico = await firebase.database().ref('psicologia').once('value').catch(() => ({ val: () => ({}) }));
+                const snapSocial = await firebase.database().ref('social').once('value').catch(() => ({ val: () => ({}) }));
 
                 const dataLegal = snapLegal.val() || {};
                 const dataPsico = snapPsico.val() || {};
@@ -370,19 +374,21 @@
                 const expedientesMap = new Map();
 
                 const procesarNodo = (data, modulo) => {
+                    if (!data) return;
                     Object.keys(data).forEach(key => {
                         const reg = data[key];
+                        if (!reg || typeof reg !== 'object') return;
                         
-                        const dni = obtenerValorCamp(reg, 'dni', 'numDni', 'documento', 'num_doc') || "---";
-                        const exp = obtenerValorCamp(reg, 'numero_expediente', 'numExpediente', 'expediente', 'num_exp') || "---";
+                        const dni = String(obtenerValorCamp(reg, 'dni', 'numDni', 'documento', 'num_doc') || "---").trim();
+                        const exp = String(obtenerValorCamp(reg, 'numero_expediente', 'numExpediente', 'expediente', 'num_exp') || "---").trim();
+                        const ht  = String(obtenerValorCamp(reg, 'numHojaTramite', 'hojaTramite', 'ht', 'hoja_tramite') || "---").trim();
                         
-                        // Capturamos apellidos y nombres de forma totalmente independiente
-                        const ape = obtenerValorCamp(reg, 'Apellidos', 'apellidos', 'apellido', 'paterno', 'materno', 'apellidosAdministrado');
-                        const nom = obtenerValorCamp(reg, 'Nombres', 'nombres', 'nombre', 'nombresAdministrado', 'nombresCompletos');
+                        // CORRECCIÓN: Se agregó 'apellidosCompletos' y 'nombresCompletos'
+                        const ape = String(obtenerValorCamp(reg, 'apellidosCompletos', 'Apellidos', 'apellidos', 'apellido', 'paterno', 'materno') || "").trim();
+                        const nom = String(obtenerValorCamp(reg, 'nombresCompletos', 'Nombres', 'nombres', 'nombre') || "").trim();
+                        const admAlt = String(obtenerValorCamp(reg, 'administrado', 'nombreCompleto', 'nombresYApellidos') || "").trim();
 
-                        const ht = obtenerValorCamp(reg, 'numHojaTramite', 'hojaTramite', 'ht', 'hoja_tramite') || "---";
-                        
-                        const especialistaStr = obtenerValorCamp(reg, 'especialista', 'responsable', 'abogado', 'psicologo', 'trabajadorSocial') || "";
+                        const especialistaStr = String(obtenerValorCamp(reg, 'especialista', 'responsable', 'abogado', 'psicologo', 'trabajadorSocial') || "").trim();
                         let eq = obtenerValorCamp(reg, 'equipo', 'turno', 'equipoAtencion');
                         if (!eq && especialistaStr.toUpperCase().includes("EQUIPO")) {
                             const match = especialistaStr.toUpperCase().match(/EQUIPO\s*(\d+)/);
@@ -390,32 +396,20 @@
                         }
                         if (!eq) eq = "EQUIPO 1";
 
-                        const idUnico = (dni !== "---") ? dni : ((exp !== "---") ? exp : key);
+                        const idUnico = (dni !== "---" && dni !== "") ? dni : ((exp !== "---" && exp !== "") ? exp : key);
                         
                         if (!expedientesMap.has(idUnico)) {
                             expedientesMap.set(idUnico, {
-                                id: idUnico,
-                                apellidosAcumulados: "",
-                                nombresAcumulados: "",
-                                dni: dni,
-                                expediente: exp,
-                                ht: ht,
-                                equipo: eq,
-                                legal: null,
-                                psico: null,
-                                social: null
+                                id: idUnico, apeSet: new Set(), nomSet: new Set(), admAltSet: new Set(),
+                                dni: dni, expediente: exp, ht: ht, equipo: eq, legal: null, psico: null, social: null
                             });
                         }
                         
                         const itemConsolidado = expedientesMap.get(idUnico);
                         
-                        // Acumulamos apellidos y nombres si vienen en este nodo específico
-                        if (ape && ape !== "---" && ape.trim() !== "") {
-                            itemConsolidado.apellidosAcumulados = ape;
-                        }
-                        if (nom && nom !== "---" && nom.trim() !== "") {
-                            itemConsolidado.nombresAcumulados = nom;
-                        }
+                        if (ape && ape !== "---") itemConsolidado.apeSet.add(ape);
+                        if (nom && nom !== "---") itemConsolidado.nomSet.add(nom);
+                        if (admAlt && admAlt !== "---") itemConsolidado.admAltSet.add(admAlt);
 
                         if (itemConsolidado.dni === "---" && dni !== "---") itemConsolidado.dni = dni;
                         if (itemConsolidado.expediente === "---" && exp !== "---") itemConsolidado.expediente = exp;
@@ -425,32 +419,11 @@
                         const fechaBruta = obtenerValorCamp(reg, 'fechaRegistro', 'fecha', 'fechaVisita', 'fechaEvaluacion');
 
                         if (modulo === 'legal') {
-                            itemConsolidado.legal = {
-                                estado: reg.estadoLegal || reg.estado || "REGISTRADO",
-                                resp: reg.especialista || reg.responsable || "---",
-                                det: reg.tipoAsesoria || reg.tipo_detalle || "-",
-                                fec: formatearFecha(fechaBruta),
-                                obs: reg.observaciones || "Sin observaciones registradas.",
-                                equipo: eq
-                            };
+                            itemConsolidado.legal = { estado: reg.estadoLegal || reg.estado || "REGISTRADO", resp: especialistaStr || "---", det: reg.tipoAsesoria || reg.tipo_detalle || "-", fec: formatearFecha(fechaBruta), obs: reg.observaciones || "Sin observaciones registradas.", equipo: eq };
                         } else if (modulo === 'psico') {
-                            itemConsolidado.psico = {
-                                estado: reg.estadoPsicologico || reg.estado || "REGISTRADO",
-                                resp: reg.especialista || reg.responsable || "---",
-                                det: reg.tipoAtencion || reg.intervencion || "-",
-                                fec: formatearFecha(fechaBruta),
-                                obs: reg.observaciones || "Sin observaciones registradas.",
-                                equipo: eq
-                            };
+                            itemConsolidado.psico = { estado: reg.estadoPsicologico || reg.estado || "REGISTRADO", resp: especialistaStr || "---", det: reg.tipoAtencion || reg.intervencion || "-", fec: formatearFecha(fechaBruta), obs: reg.observaciones || "Sin observaciones registradas.", equipo: eq };
                         } else if (modulo === 'social') {
-                            itemConsolidado.social = {
-                                estado: reg.estadoSocial || reg.estado || "REGISTRADO",
-                                resp: reg.especialista || reg.responsable || "---",
-                                det: reg.tipoIntervencion || reg.clasificacion || "-",
-                                fec: formatearFecha(fechaBruta),
-                                obs: reg.observaciones || "Sin observaciones registradas.",
-                                equipo: eq
-                            };
+                            itemConsolidado.social = { estado: reg.estadoSocial || reg.estado || "REGISTRADO", resp: especialistaStr || "---", det: reg.tipoIntervencion || reg.clasificacion || "-", fec: formatearFecha(fechaBruta), obs: reg.observaciones || "Sin observaciones registradas.", equipo: eq };
                         }
                     });
                 };
@@ -459,21 +432,19 @@
                 procesarNodo(dataPsico, 'psico');
                 procesarNodo(dataSocial, 'social');
 
-                // Consolidación final del nombre completo uniendo apellidos y nombres recolectados de todos los nodos
                 BD_GLOBAL_TRAZABILIDAD = Array.from(expedientesMap.values()).map(item => {
-                    let nombreCompletoFinal = "---";
-                    const ap = item.apellidosAcumulados.trim();
-                    const nm = item.nombresAcumulados.trim();
-
-                    if (ap && nm) {
-                        nombreCompletoFinal = `${ap} ${nm}`;
-                    } else if (ap) {
-                        nombreCompletoFinal = ap;
-                    } else if (nm) {
-                        nombreCompletoFinal = nm;
+                    let apeStr = Array.from(item.apeSet).join(" ").trim();
+                    let nomStr = Array.from(item.nomSet).join(" ").trim();
+                    
+                    let fullNombre = "---";
+                    if (apeStr || nomStr) {
+                        fullNombre = `${apeStr} ${nomStr}`.trim();
+                    } else if (item.admAltSet.size > 0) {
+                        fullNombre = Array.from(item.admAltSet)[0];
                     }
 
-                    item.administrado = nombreCompletoFinal;
+                    item.administrado = fullNombre;
+                    item.busquedaIndex = normalizarTexto(`${fullNombre} ${item.dni} ${item.expediente} ${item.ht}`);
                     return item;
                 });
 
@@ -495,15 +466,17 @@
         };
 
         window.realizarBusquedaTrazabilidad = function() {
-            const criterio = document.getElementById('input-criterio').value.trim().toUpperCase();
-            if (!criterio) {
-                alert("Por favor ingrese un criterio de búsqueda.");
+            const inputVal = document.getElementById('input-criterio').value.trim();
+            if (!inputVal) {
+                alert("Por favor ingrese un criterio de búsqueda (DNI, Expediente o Apellidos).");
                 return;
             }
 
+            const criterio = normalizarTexto(inputVal);
+            const palabrasBusqueda = criterio.split(/\s+/);
+
             const encontrado = BD_GLOBAL_TRAZABILIDAD.find(item => {
-                const jsonText = JSON.stringify(item).toUpperCase();
-                return jsonText.includes(criterio);
+                return palabrasBusqueda.every(palabra => item.busquedaIndex.includes(palabra));
             });
 
             if (!encontrado) {
@@ -512,7 +485,7 @@
                 return;
             }
 
-            document.getElementById('card-administrado').innerText = encontrado.administrado && encontrado.administrado !== "---" ? encontrado.administrado : "REGISTRO ENCONTRADO";
+            document.getElementById('card-administrado').innerText = (encontrado.administrado && encontrado.administrado !== "---") ? encontrado.administrado : "REGISTRO ENCONTRADO";
             document.getElementById('card-dni').innerText = encontrado.dni || "---";
             document.getElementById('card-exp').innerText = encontrado.expediente || "---";
             document.getElementById('card-ht').innerText = encontrado.ht || "---";
