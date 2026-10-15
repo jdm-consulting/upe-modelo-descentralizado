@@ -71,7 +71,7 @@
                         <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         </span>
-                        <input type="text" id="input-criterio" placeholder="MORON, FIDELINA, 654321..." class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-600 focus:bg-white focus:outline-none transition uppercase" onkeypress="if(event.key==='Enter') window.realizarBusquedaTrazabilidad()">
+                        <input type="text" id="input-criterio" placeholder="EJ: MAZZARRI, 654321..." class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-600 focus:bg-white focus:outline-none transition uppercase" onkeypress="if(event.key==='Enter') window.realizarBusquedaTrazabilidad()">
                     </div>
                     <button onclick="window.realizarBusquedaTrazabilidad()" class="bg-[#00794c] hover:bg-[#00603c] text-white px-6 py-3 rounded-xl font-semibold text-sm shadow transition flex items-center justify-center space-x-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
@@ -102,7 +102,7 @@
                                 <span class="text-xs font-bold uppercase tracking-wider text-indigo-900 flex items-center space-x-1.5">
                                     <span>⚖️ MÓDULO LEGAL</span>
                                 </span>
-                                <span id="badge-legal" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">SIN REGISTRO</span>
+                                <span id="badge-legal" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">SIN REGISTRO</span>
                             </div>
                             <p class="text-xs text-slate-600 mb-1">Responsable: <strong id="resp-legal" class="text-slate-900 font-semibold">---</strong></p>
                             <p class="text-xs text-slate-600 mb-1">Detalle: <span id="det-legal" class="text-slate-900 font-medium">-</span></p>
@@ -120,7 +120,7 @@
                                 <span class="text-xs font-bold uppercase tracking-wider text-teal-900 flex items-center space-x-1.5">
                                     <span>🧠 MÓDULO PSICOLOGÍA</span>
                                 </span>
-                                <span id="badge-psico" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-teal-50 text-teal-700 border border-teal-200">SIN REGISTRO</span>
+                                <span id="badge-psico" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">SIN REGISTRO</span>
                             </div>
                             <p class="text-xs text-slate-600 mb-1">Responsable: <strong id="resp-psico" class="text-slate-900 font-semibold">---</strong></p>
                             <p class="text-xs text-slate-600 mb-1">Detalle: <span id="det-psico" class="text-slate-900 font-medium">-</span></p>
@@ -138,7 +138,7 @@
                                 <span class="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center space-x-1.5">
                                     <span>🏠 TRABAJO SOCIAL</span>
                                 </span>
-                                <span id="badge-social" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">SIN REGISTRO</span>
+                                <span id="badge-social" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">SIN REGISTRO</span>
                             </div>
                             <p class="text-xs text-slate-600 mb-1">Responsable: <strong id="resp-social" class="text-slate-900 font-semibold">---</strong></p>
                             <p class="text-xs text-slate-600 mb-1">Detalle: <span id="det-social" class="text-slate-900 font-medium">-</span></p>
@@ -188,7 +188,7 @@
                         </select>
                     </div>
                     <div>
-                        <button onclick="window.actualizarDashboardGraficos()" class="w-full bg-[#111827] hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider py-3 px-4 rounded-xl shadow transition flex items-center justify-center space-x-2">
+                        <button onclick="window.cargarDatosCentrales()" class="w-full bg-[#111827] hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider py-3 px-4 rounded-xl shadow transition flex items-center justify-center space-x-2">
                             <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd"></path></svg>
                             <span>ACTUALIZAR MÉTRICAS</span>
                         </button>
@@ -287,6 +287,11 @@
         let chartEspecialidadInstance = null;
         let chartEquiposInstance = null;
 
+        // Caches para tiempo real
+        let dataLegalCache = {};
+        let dataPsicoCache = {};
+        let dataSocialCache = {};
+
         // NUEVA FUNCIÓN PARA IGNORAR TILDES AL BUSCAR
         function normalizarTexto(texto) {
             if (!texto) return "";
@@ -294,8 +299,28 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            window.cargarDatosCentrales();
+            inicializarListenersTiempoReal();
         });
+
+        function inicializarListenersTiempoReal() {
+            const lblEstado = document.getElementById('estado-conexion');
+            lblEstado.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-200 border border-amber-400/30";
+            lblEstado.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-amber-400 rounded-full animate-pulse"></span> Sincronizando en tiempo real...`;
+
+            // Escuchar cambios en los 3 nodos en tiempo real (automático)
+            firebase.database().ref('legal').on('value', snap => {
+                dataLegalCache = snap.val() || {};
+                procesarConsolidado();
+            });
+            firebase.database().ref('psicologia').on('value', snap => {
+                dataPsicoCache = snap.val() || {};
+                procesarConsolidado();
+            });
+            firebase.database().ref('social').on('value', snap => {
+                dataSocialCache = snap.val() || {};
+                procesarConsolidado();
+            });
+        }
 
         function formatearFecha(fechaStr) {
             if (!fechaStr || fechaStr === "-" || fechaStr === "---") return "-";
@@ -357,114 +382,103 @@
             return "";
         }
 
-        window.cargarDatosCentrales = async function() {
-            const lblEstado = document.getElementById('estado-conexion');
-            lblEstado.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-200 border border-amber-400/30";
-            lblEstado.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-amber-400 rounded-full animate-pulse"></span> Consolidando Nodos...`;
-
-            try {
-                const snapLegal = await firebase.database().ref('legal').once('value').catch(() => ({ val: () => ({}) }));
-                const snapPsico = await firebase.database().ref('psicologia').once('value').catch(() => ({ val: () => ({}) }));
-                const snapSocial = await firebase.database().ref('social').once('value').catch(() => ({ val: () => ({}) }));
-
-                const dataLegal = snapLegal.val() || {};
-                const dataPsico = snapPsico.val() || {};
-                const dataSocial = snapSocial.val() || {};
-
-                const expedientesMap = new Map();
-
-                const procesarNodo = (data, modulo) => {
-                    if (!data) return;
-                    Object.keys(data).forEach(key => {
-                        const reg = data[key];
-                        if (!reg || typeof reg !== 'object') return;
-                        
-                        const dni = String(obtenerValorCamp(reg, 'dni', 'numDni', 'documento', 'num_doc') || "---").trim();
-                        const exp = String(obtenerValorCamp(reg, 'numero_expediente', 'numExpediente', 'expediente', 'num_exp') || "---").trim();
-                        const ht  = String(obtenerValorCamp(reg, 'numHojaTramite', 'hojaTramite', 'ht', 'hoja_tramite') || "---").trim();
-                        
-                        // CORRECCIÓN: Se agregó 'apellidosCompletos' y 'nombresCompletos'
-                        const ape = String(obtenerValorCamp(reg, 'apellidosCompletos', 'Apellidos', 'apellidos', 'apellido', 'paterno', 'materno') || "").trim();
-                        const nom = String(obtenerValorCamp(reg, 'nombresCompletos', 'Nombres', 'nombres', 'nombre') || "").trim();
-                        const admAlt = String(obtenerValorCamp(reg, 'administrado', 'nombreCompleto', 'nombresYApellidos') || "").trim();
-
-                        const especialistaStr = String(obtenerValorCamp(reg, 'especialista', 'responsable', 'abogado', 'psicologo', 'trabajadorSocial') || "").trim();
-                        let eq = obtenerValorCamp(reg, 'equipo', 'turno', 'equipoAtencion');
-                        if (!eq && especialistaStr.toUpperCase().includes("EQUIPO")) {
-                            const match = especialistaStr.toUpperCase().match(/EQUIPO\s*(\d+)/);
-                            if (match) eq = `EQUIPO ${match[1]}`;
-                        }
-                        if (!eq) eq = "EQUIPO 1";
-
-                        const idUnico = (dni !== "---" && dni !== "") ? dni : ((exp !== "---" && exp !== "") ? exp : key);
-                        
-                        if (!expedientesMap.has(idUnico)) {
-                            expedientesMap.set(idUnico, {
-                                id: idUnico, apeSet: new Set(), nomSet: new Set(), admAltSet: new Set(),
-                                dni: dni, expediente: exp, ht: ht, equipo: eq, legal: null, psico: null, social: null
-                            });
-                        }
-                        
-                        const itemConsolidado = expedientesMap.get(idUnico);
-                        
-                        if (ape && ape !== "---") itemConsolidado.apeSet.add(ape);
-                        if (nom && nom !== "---") itemConsolidado.nomSet.add(nom);
-                        if (admAlt && admAlt !== "---") itemConsolidado.admAltSet.add(admAlt);
-
-                        if (itemConsolidado.dni === "---" && dni !== "---") itemConsolidado.dni = dni;
-                        if (itemConsolidado.expediente === "---" && exp !== "---") itemConsolidado.expediente = exp;
-                        if (itemConsolidado.ht === "---" && ht !== "---") itemConsolidado.ht = ht;
-                        if (itemConsolidado.equipo === "EQUIPO 1" && eq !== "EQUIPO 1") itemConsolidado.equipo = eq;
-
-                        const fechaBruta = obtenerValorCamp(reg, 'fechaRegistro', 'fecha', 'fechaVisita', 'fechaEvaluacion');
-
-                        if (modulo === 'legal') {
-                            itemConsolidado.legal = { estado: reg.estadoLegal || reg.estado || "REGISTRADO", resp: especialistaStr || "---", det: reg.tipoAsesoria || reg.tipo_detalle || "-", fec: formatearFecha(fechaBruta), obs: reg.observaciones || "Sin observaciones registradas.", equipo: eq };
-                        } else if (modulo === 'psico') {
-                            itemConsolidado.psico = { estado: reg.estadoPsicologico || reg.estado || "REGISTRADO", resp: especialistaStr || "---", det: reg.tipoAtencion || reg.intervencion || "-", fec: formatearFecha(fechaBruta), obs: reg.observaciones || "Sin observaciones registradas.", equipo: eq };
-                        } else if (modulo === 'social') {
-                            itemConsolidado.social = { estado: reg.estadoSocial || reg.estado || "REGISTRADO", resp: especialistaStr || "---", det: reg.tipoIntervencion || reg.clasificacion || "-", fec: formatearFecha(fechaBruta), obs: reg.observaciones || "Sin observaciones registradas.", equipo: eq };
-                        }
-                    });
-                };
-
-                procesarNodo(dataLegal, 'legal');
-                procesarNodo(dataPsico, 'psico');
-                procesarNodo(dataSocial, 'social');
-
-                BD_GLOBAL_TRAZABILIDAD = Array.from(expedientesMap.values()).map(item => {
-                    let apeStr = Array.from(item.apeSet).join(" ").trim();
-                    let nomStr = Array.from(item.nomSet).join(" ").trim();
-                    
-                    let fullNombre = "---";
-                    if (apeStr || nomStr) {
-                        fullNombre = `${apeStr} ${nomStr}`.trim();
-                    } else if (item.admAltSet.size > 0) {
-                        fullNombre = Array.from(item.admAltSet)[0];
-                    }
-
-                    item.administrado = fullNombre;
-                    item.busquedaIndex = normalizarTexto(`${fullNombre} ${item.dni} ${item.expediente} ${item.ht}`);
-                    return item;
-                });
-
-                if (BD_GLOBAL_TRAZABILIDAD.length > 0) {
-                    lblEstado.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-200 border border-emerald-400/30";
-                    lblEstado.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-emerald-400 rounded-full"></span> Conectado (${BD_GLOBAL_TRAZABILIDAD.length} Registros)`;
-                } else {
-                    lblEstado.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-sky-500/20 text-sky-200 border border-sky-400/30";
-                    lblEstado.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-sky-400 rounded-full"></span> Sin Registros`;
-                }
-
-                window.actualizarDashboardGraficos();
-
-            } catch (error) {
-                console.error("Error al consolidar Firebase:", error);
-                lblEstado.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-rose-500/20 text-rose-200 border border-rose-400/30";
-                lblEstado.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-rose-400 rounded-full"></span> Error de Conexión`;
-            }
+        // Se mantiene para el botón, pero llama a la función principal
+        window.cargarDatosCentrales = function() {
+            procesarConsolidado();
         };
 
+        function procesarConsolidado() {
+            const expedientesMap = new Map();
+
+            const procesarNodo = (data, modulo) => {
+                if (!data) return;
+                Object.keys(data).forEach(key => {
+                    const reg = data[key];
+                    if (!reg || typeof reg !== 'object') return;
+                    
+                    const dni = String(obtenerValorCamp(reg, 'dni', 'numDni', 'documento', 'num_doc') || "---").trim();
+                    const exp = String(obtenerValorCamp(reg, 'numero_expediente', 'numExpediente', 'numExpedienteCorrelativo', 'expediente', 'num_exp') || "---").trim();
+                    const ht  = String(obtenerValorCamp(reg, 'numHojaTramite', 'hojaTramite', 'ht', 'hoja_tramite') || "---").trim();
+                    
+                    // CORRECCIÓN DE NOMBRES PARA EL BUSCADOR
+                    const ape = String(obtenerValorCamp(reg, 'apellidosCompletos', 'Apellidos', 'apellidos', 'apellido', 'paterno', 'materno') || "").trim();
+                    const nom = String(obtenerValorCamp(reg, 'nombresCompletos', 'Nombres', 'nombres', 'nombre') || "").trim();
+                    const admAlt = String(obtenerValorCamp(reg, 'administrado', 'nombreCompleto', 'nombresYApellidos') || "").trim();
+
+                    const especialistaStr = String(obtenerValorCamp(reg, 'especialista', 'responsable', 'abogado', 'psicologo', 'trabajadorSocial') || "").trim();
+                    let eq = obtenerValorCamp(reg, 'equipo', 'turno', 'equipoAtencion');
+                    if (!eq && especialistaStr.toUpperCase().includes("EQUIPO")) {
+                        const match = especialistaStr.toUpperCase().match(/EQUIPO\s*(\d+)/);
+                        if (match) eq = `EQUIPO ${match[1]}`;
+                    }
+                    if (!eq) eq = "EQUIPO 1";
+
+                    const idUnico = (dni !== "---" && dni !== "") ? dni : ((exp !== "---" && exp !== "") ? exp : key);
+                    
+                    if (!expedientesMap.has(idUnico)) {
+                        expedientesMap.set(idUnico, {
+                            id: idUnico, apeSet: new Set(), nomSet: new Set(), admAltSet: new Set(),
+                            dni: dni, expediente: exp, ht: ht, equipo: eq, legal: null, psico: null, social: null
+                        });
+                    }
+                    
+                    const itemConsolidado = expedientesMap.get(idUnico);
+                    
+                    if (ape && ape !== "---") itemConsolidado.apeSet.add(ape);
+                    if (nom && nom !== "---") itemConsolidado.nomSet.add(nom);
+                    if (admAlt && admAlt !== "---") itemConsolidado.admAltSet.add(admAlt);
+
+                    if (itemConsolidado.dni === "---" && dni !== "---") itemConsolidado.dni = dni;
+                    if (itemConsolidado.expediente === "---" && exp !== "---") itemConsolidado.expediente = exp;
+                    if (itemConsolidado.ht === "---" && ht !== "---") itemConsolidado.ht = ht;
+                    if (itemConsolidado.equipo === "EQUIPO 1" && eq !== "EQUIPO 1") itemConsolidado.equipo = eq;
+
+                    const fechaBruta = obtenerValorCamp(reg, 'fechaRegistro', 'fecha', 'fechaVisita', 'fechaEvaluacion');
+
+                    if (modulo === 'legal') {
+                        itemConsolidado.legal = { estado: reg.estadoLegal || reg.estado || "REGISTRADO", resp: especialistaStr || "---", det: reg.tipoAsesoria || reg.tipo_detalle || "-", fec: formatearFecha(fechaBruta), obs: reg.observaciones || "Sin observaciones registradas.", equipo: eq };
+                    } else if (modulo === 'psico') {
+                        itemConsolidado.psico = { estado: reg.estadoPsicologico || reg.estado || "REGISTRADO", resp: especialistaStr || "---", det: reg.tipoAtencion || reg.intervencion || "-", fec: formatearFecha(fechaBruta), obs: reg.observaciones || "Sin observaciones registradas.", equipo: eq };
+                    } else if (modulo === 'social') {
+                        itemConsolidado.social = { estado: reg.estadoSocial || reg.estado || "REGISTRADO", resp: especialistaStr || "---", det: reg.tipoIntervencion || reg.clasificacion || "-", fec: formatearFecha(fechaBruta), obs: reg.observaciones || "Sin observaciones registradas.", equipo: eq };
+                    }
+                });
+            };
+
+            procesarNodo(dataLegalCache, 'legal');
+            procesarNodo(dataPsicoCache, 'psico');
+            procesarNodo(dataSocialCache, 'social');
+
+            BD_GLOBAL_TRAZABILIDAD = Array.from(expedientesMap.values()).map(item => {
+                let apeStr = Array.from(item.apeSet).join(" ").trim();
+                let nomStr = Array.from(item.nomSet).join(" ").trim();
+                
+                let fullNombre = "---";
+                if (apeStr || nomStr) {
+                    fullNombre = `${apeStr} ${nomStr}`.trim();
+                } else if (item.admAltSet.size > 0) {
+                    fullNombre = Array.from(item.admAltSet)[0];
+                }
+
+                item.administrado = fullNombre;
+                // Indexación para el buscador inteligente (sin tildes)
+                item.busquedaIndex = normalizarTexto(`${fullNombre} ${item.dni} ${item.expediente} ${item.ht}`);
+                return item;
+            });
+
+            const lblEstado = document.getElementById('estado-conexion');
+            if (BD_GLOBAL_TRAZABILIDAD.length > 0) {
+                lblEstado.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-200 border border-emerald-400/30";
+                lblEstado.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-emerald-400 rounded-full"></span> Conectado (${BD_GLOBAL_TRAZABILIDAD.length} Registros)`;
+            } else {
+                lblEstado.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-sky-500/20 text-sky-200 border border-sky-400/30";
+                lblEstado.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-sky-400 rounded-full"></span> Sin Registros`;
+            }
+
+            window.actualizarDashboardGraficos();
+        }
+
+        // BUSCADOR INTELIGENTE
         window.realizarBusquedaTrazabilidad = function() {
             const inputVal = document.getElementById('input-criterio').value.trim();
             if (!inputVal) {
@@ -475,12 +489,13 @@
             const criterio = normalizarTexto(inputVal);
             const palabrasBusqueda = criterio.split(/\s+/);
 
+            // Busca que TODAS las palabras ingresadas existan en el registro
             const encontrado = BD_GLOBAL_TRAZABILIDAD.find(item => {
                 return palabrasBusqueda.every(palabra => item.busquedaIndex.includes(palabra));
             });
 
             if (!encontrado) {
-                alert("No se encontraron registros activos en la base de datos para ese criterio.");
+                alert("No se encontraron registros en la base de datos para ese criterio.");
                 limpiarTarjetaTrazabilidad();
                 return;
             }
